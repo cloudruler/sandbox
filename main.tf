@@ -101,7 +101,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   }
 
   os_disk {
-    name                 = "osdisk"
+    name                 = "osdisk-k8s-master-${count.index}"
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
   }

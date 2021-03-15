@@ -128,6 +128,9 @@ resource "azurerm_dev_test_global_vm_shutdown_schedule" "vm_k8s_master_shutdown"
   location              = azurerm_linux_virtual_machine.vm_k8s_master[count.index].location
   daily_recurrence_time = "0000"
   timezone              = "Central Standard Time"
+  notification_settings {
+    enabled = "false"
+  }
 }
 
 /*

@@ -129,7 +129,7 @@ resource "azurerm_dev_test_global_vm_shutdown_schedule" "vm_k8s_master_shutdown"
   daily_recurrence_time = "0000"
   timezone              = "Central Standard Time"
   notification_settings {
-    enabled = "false"
+    enabled = false
   }
 }
 

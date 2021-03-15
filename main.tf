@@ -46,7 +46,7 @@ resource "azurerm_network_security_group" "nsg_ssh" {
   resource_group_name = azurerm_resource_group.rg.name
 
   security_rule {
-    name                       = "allow-ssh"
+    name                       = "nsg-allow-ssh-snet-${local.zone_name}"
     priority                   = 1001
     direction                  = "Inbound"
     access                     = "Allow"
@@ -128,12 +128,6 @@ resource "azurerm_dev_test_global_vm_shutdown_schedule" "vm_k8s_master_shutdown"
   location              = azurerm_linux_virtual_machine.vm_k8s_master[count.index].location
   daily_recurrence_time = "0000"
   timezone              = "Central Standard Time"
-
-  notification_settings {
-    enabled         = true
-    time_in_minutes = "60"
-    webhook_url     = "https://sample-webhook-url.example.com"
-  }
 }
 
 /*

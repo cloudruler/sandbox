@@ -64,13 +64,17 @@ data "azurerm_public_ip" "pip_k8s" {
   resource_group_name = var.connectivity_resource_group_name
 }
 
+locals {
+  frontend_ip_configuration_name = "ipconfig-lbe-k8s"
+}
+
 resource "azurerm_lb" "lbe_k8s" {
   name                = "lbe-k8s"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
   sku                 = "Standard"
   frontend_ip_configuration {
-    name                 = "ipconfig-lbe-k8s"
+    name                 = local.frontend_ip_configuration_name
     public_ip_address_id = data.azurerm_public_ip.pip_k8s.id
   }
 }
@@ -85,17 +89,19 @@ resource "azurerm_lb_probe" "lbe_prb_k8s" {
   resource_group_name = azurerm_resource_group.rg.name
   loadbalancer_id     = azurerm_lb.lbe_k8s.id
   port                = 22
-
 }
 
-/*
-resource "azurerm_lb_backend_address_pool_address" "lbe_badr_k8s" {
-  name                    = "lbe-badr-k8s"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s.id
-  virtual_network_id      = azurerm_virtual_network.vnet_zone.id
-  ip_address              = "10.0.0.1"
+resource "azurerm_lb_rule" "lbe_rule" {
+  resource_group_name            = azurerm_resource_group.rg.name
+  loadbalancer_id                = azurerm_lb.lbe_k8s.id
+  name                           = "lbe-k8s-rule"
+  protocol                       = "Tcp"
+  frontend_port                  = 22
+  backend_port                   = 22
+  frontend_ip_configuration_name = local.frontend_ip_configuration_name
+  backend_address_pool_id        = azurerm_lb_backend_address_pool.lbe_bep_k8s.id
+  probe_id                       = azurerm_lb_probe.lbe_prb_k8s.id
 }
-*/
 
 data "azurerm_ssh_public_key" "ssh_public_key" {
   resource_group_name = "rg-identity"
@@ -146,15 +152,15 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
   }
 
   network_interface {
-    name                      = "nic-k8s-master"
-    primary                   = true
+    name    = "nic-k8s-master"
+    primary = true
     #network_security_group_id = "value"
     ip_configuration {
       name                                   = "internal"
       primary                                = true
       subnet_id                              = azurerm_subnet.snet_main.id
       application_security_group_ids         = [data.azurerm_application_security_group.asg_k8s_master.id]
-      load_balancer_backend_address_pool_ids = [ azurerm_lb_backend_address_pool.lbe_bep_k8s.id ]
+      load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
       public_ip_address {
         name              = "pip-k8s"
         domain_name_label = "k8s-master"

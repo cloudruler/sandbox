@@ -13,3 +13,7 @@ variable "k8s_worker_node_count" {
 variable "domain" {
   type = string
 }
+
+variable "connectivity_resource_group_name" {
+  type = string
+}

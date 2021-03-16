@@ -59,6 +59,11 @@ locals {
   admin_username = "cloudruleradmin"
 }
 
+data "azurerm_public_ip" "pip_k8s" {
+  name                = "pip-k8s"
+  resource_group_name = var.connectivity_resource_group_name
+}
+
 resource "azurerm_lb" "lbe_k8s" {
   name                = "lbe-k8s"
   location            = var.location
@@ -66,7 +71,7 @@ resource "azurerm_lb" "lbe_k8s" {
   sku                 = "Standard"
   frontend_ip_configuration {
     name                 = "ipconfig-lbe-k8s"
-    public_ip_address_id = azurerm_public_ip.pip_k8s.id
+    public_ip_address_id = data.azurerm_public_ip.pip_k8s.id
   }
 }
 

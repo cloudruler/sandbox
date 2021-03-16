@@ -148,7 +148,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
   network_interface {
     name                      = "nic-k8s-master"
     primary                   = true
-    network_security_group_id = "value"
+    #network_security_group_id = "value"
     ip_configuration {
       name                                   = "internal"
       primary                                = true

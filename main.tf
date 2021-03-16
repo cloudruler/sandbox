@@ -157,7 +157,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
       load_balancer_backend_address_pool_ids = [ azurerm_lb_backend_address_pool.lbe_bep_k8s.id ]
       public_ip_address {
         name              = "pip-k8s"
-        domain_name_label = "k8s-master-"
+        domain_name_label = "k8s-master"
         # ip_tag {
         #   tag = "value"
         #   type = "value"

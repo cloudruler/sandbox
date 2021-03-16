@@ -9,3 +9,7 @@ variable "k8s_master_node_count" {
 variable "k8s_worker_node_count" {
   type = number
 }
+
+variable "domain" {
+  type = string
+}

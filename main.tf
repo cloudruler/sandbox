@@ -102,25 +102,29 @@ data "azurerm_ssh_public_key" "ssh_public_key" {
   name                = "ssh-cloudruler"
 }
 
-/*
+data "azurerm_application_security_group" "asg_k8s_master" {
+  name                = "asg-k8s-master"
+  resource_group_name = var.connectivity_resource_group_name
+}
+
 resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
-  name                = "vmss-k8s-master"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = var.location
-  sku                 = "Standard_D2as_v4"
-  instances           = var.k8s_master_node_count
-  admin_username      = local.admin_username
+  name                 = "vmss-k8s-master"
+  resource_group_name  = azurerm_resource_group.rg.name
+  location             = var.location
+  sku                  = "Standard_B2s"
+  instances            = var.k8s_master_node_count
+  admin_username       = local.admin_username
   computer_name_prefix = "vm-k8s-master"
-  custom_data = ""
-  upgrade_mode = "Automatic"
-  health_probe_id = azurerm_lb_probe.lbe_prb_k8s.id
+  #custom_data = ""
+  upgrade_mode                = "Automatic"
+  health_probe_id             = azurerm_lb_probe.lbe_prb_k8s.id
   platform_fault_domain_count = 5
   depends_on = [
-    
+
   ]
 
   automatic_os_upgrade_policy {
-    disable_automatic_rollback = false
+    disable_automatic_rollback  = false
     enable_automatic_os_upgrade = true
   }
 
@@ -142,19 +146,22 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
   }
 
   network_interface {
-    name    = "nic-k8s-master"
-    primary = true
+    name                      = "nic-k8s-master"
+    primary                   = true
     network_security_group_id = "value"
     ip_configuration {
-      name      = "internal"
-      primary   = true
-      subnet_id = azurerm_subnet.internal.id
-      application_security_group_ids = [ "" ]
-      load_balancer_backend_address_pool_ids = [ "" ]
+      name                                   = "internal"
+      primary                                = true
+      subnet_id                              = azurerm_subnet.snet_main.id
+      application_security_group_ids         = [data.azurerm_application_security_group.asg_k8s_master.id]
+      load_balancer_backend_address_pool_ids = [ azurerm_lb_backend_address_pool.lbe_bep_k8s.id ]
       public_ip_address {
-        name = ""
-        domain_name_label = "k8s-master-${count.index}"
-
+        name              = "pip-k8s"
+        domain_name_label = "k8s-master-"
+        # ip_tag {
+        #   tag = "value"
+        #   type = "value"
+        # }
       }
     }
   }
@@ -167,13 +174,3 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
 
   }
 }
-
-  domain_name_label   = "k8s-master"
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.snet_main.id
-    private_ip_address_allocation = "dynamic"
-    #public_ip_address_id          = azurerm_public_ip.pip_k8s.id
-  }
-*/
-

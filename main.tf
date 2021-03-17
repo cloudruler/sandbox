@@ -32,6 +32,11 @@ resource "azurerm_subnet" "snet_main" {
   address_prefixes     = ["10.1.1.0/24"]
 }
 
+data "azurerm_application_security_group" "asg_k8s_master" {
+  name                = "asg-k8s-master"
+  resource_group_name = var.connectivity_resource_group_name
+}
+
 resource "azurerm_network_security_group" "nsg_ssh" {
   name                = "nsg-ssh"
   location            = var.location
@@ -50,9 +55,117 @@ resource "azurerm_network_security_group" "nsg_ssh" {
   }
 }
 
+resource "azurerm_network_security_group" "nsg_k8s_master" {
+  name                = "nsg-k8s-master"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  security_rule {
+    name                                       = "allow-in-k8s-api"
+    description                                = "Allow Inbound to Kubernetes API server"
+    priority                                   = 1001
+    direction                                  = "Inbound"
+    protocol                                   = "Tcp"
+    source_address_prefix                      = "*"
+    source_port_range                          = "*"
+    destination_application_security_group_ids = [data.azurerm_application_security_group.asg_k8s_master.id]
+    destination_port_range                     = "6443"
+    access                                     = "Allow"
+  }
+
+  security_rule {
+    name                                       = "allow-in-etcd-clientapi"
+    description                                = "Allow Inbound to etcd server client API (used by kube-apiserver, etcd)"
+    priority                                   = 1002
+    direction                                  = "Inbound"
+    protocol                                   = "Tcp"
+    source_address_prefix                      = "*"
+    source_port_range                          = "*"
+    destination_application_security_group_ids = [data.azurerm_application_security_group.asg_k8s_master.id]
+    destination_port_range                     = "2379-2380"
+    access                                     = "Allow"
+  }
+
+  security_rule {
+    name                                       = "allow-in-kubelet-api"
+    description                                = "Allow Inbound to kubelet API (used by self, control plane)"
+    priority                                   = 1003
+    direction                                  = "Inbound"
+    protocol                                   = "Tcp"
+    source_address_prefix                      = "*"
+    source_port_range                          = "*"
+    destination_application_security_group_ids = [data.azurerm_application_security_group.asg_k8s_master.id]
+    destination_port_range                     = "10250"
+    access                                     = "Allow"
+  }
+
+  security_rule {
+    name                                       = "allow-in-kube-scheduler"
+    description                                = "Allow Inbound to kube-scheduler (used by self)"
+    priority                                   = 1004
+    direction                                  = "Inbound"
+    protocol                                   = "Tcp"
+    source_address_prefix                      = "*"
+    source_port_range                          = "*"
+    destination_application_security_group_ids = [data.azurerm_application_security_group.asg_k8s_master.id]
+    destination_port_range                     = "10251"
+    access                                     = "Allow"
+  }
+
+  security_rule {
+    name                                       = "allow-in-kube-controller-manager"
+    description                                = "Allow Inbound to kube-controller-manager (used by self)"
+    priority                                   = 1005
+    direction                                  = "Inbound"
+    protocol                                   = "Tcp"
+    source_address_prefix                      = "*"
+    source_port_range                          = "*"
+    destination_application_security_group_ids = [data.azurerm_application_security_group.asg_k8s_master.id]
+    destination_port_range                     = "10252"
+    access                                     = "Allow"
+  }
+}
+
+resource "azurerm_network_security_group" "nsg_k8s_worker" {
+  name                = "nsg-k8s-worker"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  security_rule {
+    name                                       = "allow-in-kubelet-api"
+    description                                = "Allow Inbound to kubelet API (used by self, control plane)"
+    priority                                   = 1001
+    direction                                  = "Inbound"
+    protocol                                   = "Tcp"
+    source_address_prefix                      = "*"
+    source_port_range                          = "*"
+    destination_application_security_group_ids = [data.azurerm_application_security_group.asg_k8s_master.id]
+    destination_port_range                     = "10250"
+    access                                     = "Allow"
+  }
+
+  security_rule {
+    name                                       = "allow-in-kube-scheduler"
+    description                                = "Allow Inbound to NodePort Services (used by All)"
+    priority                                   = 1002
+    direction                                  = "Inbound"
+    protocol                                   = "Tcp"
+    source_address_prefix                      = "*"
+    source_port_range                          = "*"
+    destination_application_security_group_ids = [data.azurerm_application_security_group.asg_k8s_master.id]
+    destination_port_range                     = "30000-32767"
+    access                                     = "Allow"
+  }
+}
+
 resource "azurerm_subnet_network_security_group_association" "nsg_ssh_snet_main" {
   subnet_id                 = azurerm_subnet.snet_main.id
   network_security_group_id = azurerm_network_security_group.nsg_ssh.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "nsg_k8s_master_snet_main" {
+  subnet_id                 = azurerm_subnet.snet_main.id
+  network_security_group_id = azurerm_network_security_group.nsg_k8s_master.id
 }
 
 locals {
@@ -106,11 +219,6 @@ resource "azurerm_lb_rule" "lbe_rule" {
 data "azurerm_ssh_public_key" "ssh_public_key" {
   resource_group_name = "rg-identity"
   name                = "ssh-cloudruler"
-}
-
-data "azurerm_application_security_group" "asg_k8s_master" {
-  name                = "asg-k8s-master"
-  resource_group_name = var.connectivity_resource_group_name
 }
 
 resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {

@@ -37,13 +37,15 @@ data "azurerm_application_security_group" "asg_k8s_master" {
   resource_group_name = var.connectivity_resource_group_name
 }
 
-resource "azurerm_network_security_group" "nsg_ssh" {
-  name                = "nsg-ssh"
+resource "azurerm_network_security_group" "nsg_main" {
+  name                = "nsg-main"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
 
+  #Allow SSH inbound
   security_rule {
     name                       = "nsg-allow-ssh-snet-${local.landing_zone_name}"
+    description                = "Allow Inbound SSH"
     priority                   = 1001
     direction                  = "Inbound"
     access                     = "Allow"
@@ -53,13 +55,8 @@ resource "azurerm_network_security_group" "nsg_ssh" {
     source_address_prefix      = "*"
     destination_address_prefix = "VirtualNetwork"
   }
-}
 
-resource "azurerm_network_security_group" "nsg_k8s_master" {
-  name                = "nsg-k8s-master"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
-
+  #k8s master
   security_rule {
     name                                       = "allow-in-k8s-api"
     description                                = "Allow Inbound to Kubernetes API server"
@@ -124,13 +121,8 @@ resource "azurerm_network_security_group" "nsg_k8s_master" {
     destination_port_range                     = "10252"
     access                                     = "Allow"
   }
-}
 
-resource "azurerm_network_security_group" "nsg_k8s_worker" {
-  name                = "nsg-k8s-worker"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
-
+  #k8s worker
   security_rule {
     name                                       = "allow-in-kubelet-api"
     description                                = "Allow Inbound to kubelet API (used by self, control plane)"
@@ -158,14 +150,9 @@ resource "azurerm_network_security_group" "nsg_k8s_worker" {
   }
 }
 
-resource "azurerm_subnet_network_security_group_association" "nsg_ssh_snet_main" {
+resource "azurerm_subnet_network_security_group_association" "nsg_snet_main" {
   subnet_id                 = azurerm_subnet.snet_main.id
-  network_security_group_id = azurerm_network_security_group.nsg_ssh.id
-}
-
-resource "azurerm_subnet_network_security_group_association" "nsg_k8s_master_snet_main" {
-  subnet_id                 = azurerm_subnet.snet_main.id
-  network_security_group_id = azurerm_network_security_group.nsg_k8s_master.id
+  network_security_group_id = azurerm_network_security_group.nsg_main.id
 }
 
 locals {

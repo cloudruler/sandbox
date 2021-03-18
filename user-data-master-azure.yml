@@ -1,0 +1,142 @@
+#cloud-config
+
+# Make sure that the br_netfilter module is loaded
+# sudo modprobe br_netfilter
+
+#As a requirement for your Linux Node's iptables to correctly see bridged traffic, you should ensure net.bridge.bridge-nf-call-iptables is set to 1 in your sysctl config
+# cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+# br_netfilter
+# EOF
+
+# cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+# net.bridge.bridge-nf-call-ip6tables = 1
+# net.bridge.bridge-nf-call-iptables = 1
+# EOF
+# sudo sysctl --system
+
+# #Update the apt package index and install packages needed to use the Kubernetes apt repository:
+# sudo apt-get update
+# sudo apt-get install -y apt-transport-https ca-certificates curl
+
+# #Download the Google Cloud public signing key
+# sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+
+# #Add the Kubernetes apt repository:
+# echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+# #Update apt package index, install kubelet, kubeadm and kubectl, and pin their version:
+# sudo apt-get update
+# sudo apt-get install -y kubelet kubeadm kubectl
+# sudo apt-mark hold kubelet kubeadm kubectl
+
+package_upgrade: true
+packages: 
+#Install packages needed to use the Kubernetes apt repository:
+- apt-transport-https
+- ca-certificates
+- curl
+write_files:
+#Make sure that the overlay and br_netfilter module is loaded
+- path: /etc/modules-load.d/k8s.conf
+  permissions: '0644'
+  content: |
+    overlay
+    br_netfilter
+#As a requirement for your Linux Node's iptables to correctly see bridged traffic, you should ensure net.bridge.bridge-nf-call-iptables is set to 1 in your sysctl config
+- path: /etc/sysctl.d/k8s.conf
+  permissions: '0644'
+  content: |
+    net.bridge.bridge-nf-call-ip6tables = 1
+    net.bridge.bridge-nf-call-iptables  = 1
+    net.ipv4.ip_forward                 = 1
+#Install Azure CNI
+- path: /tmp/install-cni-plugin.sh
+  permissions: '0644'
+  content: |
+    #!/usr/bin/env bash
+
+    # Installs azure-vnet CNI plugins on a Linux node.
+
+    # Arguments.
+    PLUGIN_VERSION=$1
+    CNI_VERSION=$2
+    CNI_BIN_DIR=/opt/cni/bin
+    CNI_NETCONF_DIR=/etc/cni/net.d
+
+    function usage
+    {
+        printf "Installs azure-vnet CNI plugins.\n"
+        printf "Usage: install-cni-plugin version [cniVersion]\n"
+    }
+
+    if [ "$PLUGIN_VERSION" = "" ]; then
+        usage
+        exit 1
+    fi
+
+    if [ "$CNI_VERSION" = "" ]; then
+        CNI_VERSION=v0.4.0
+    fi
+
+    # Create CNI directories.
+    printf "Creating CNI directories.\n"
+    mkdir -p $CNI_BIN_DIR
+    mkdir -p $CNI_NETCONF_DIR
+
+    # Install ebtables.
+    if [ ! -e /sbin/ebtables ]
+    then
+        printf "Installing ebtables package..."
+        apt-get update
+        apt-get install -y ebtables
+        printf "done.\n"
+    else
+        echo "Package ebtables is already installed."
+    fi
+    /sbin/ebtables --list > /dev/null
+
+    # Install azure-vnet CNI plugins.
+    printf "Installing azure-vnet CNI plugin version $PLUGIN_VERSION to $CNI_BIN_DIR..."
+    /usr/bin/curl -sSL https://github.com/Azure/azure-container-networking/releases/download/$PLUGIN_VERSION/azure-vnet-cni-linux-amd64-$PLUGIN_VERSION.tgz > $CNI_BIN_DIR/azure-vnet.tgz
+    tar -xzf $CNI_BIN_DIR/azure-vnet.tgz -C $CNI_BIN_DIR
+    printf "done.\n"
+
+    # Install azure-vnet CNI network configuration file.
+    printf "Installing azure-vnet CNI network configuration file to $CNI_NETCONF_DIR..."
+    mv $CNI_BIN_DIR/*.conflist $CNI_NETCONF_DIR
+    printf "done.\n"
+
+    # Install loopback plugin.
+    printf "Installing loopback CNI plugin version $CNI_VERSION to $CNI_BIN_DIR..."
+    /usr/bin/curl -sSL https://github.com/containernetworking/plugins/releases/download/$CNI_VERSION/cni-plugins-linux-amd64-$CNI_VERSION.tgz > $CNI_BIN_DIR/cni.tgz
+    tar -xzf $CNI_BIN_DIR/cni.tgz -C $CNI_BIN_DIR ./loopback
+    printf "done.\n"
+
+    # Cleanup.
+    rm $CNI_BIN_DIR/*.tgz
+    chown root:root $CNI_BIN_DIR/*
+
+    printf "azure-vnet CNI plugin is successfully installed.\n"
+runcmd:
+- [ modprobe, overlay ]
+- [ modprobe, br_netfilter ]
+- [ sysctl, --system ]
+#Download Docker's official GPG key
+- [ sh, -c, 'curl -s https://download.docker.com/linux/ubuntu/gpg | apt-key add -' ]
+#Set up docker's stable repository
+- [ sh, -c, 'echo deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable > /etc/apt/sources.list.d/docker.list' ]
+#Download the Google Cloud public signing key
+- [ sh, -c, 'curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -' ]
+#Add the Kubernetes apt repository:
+- [ sh, -c, 'echo deb https://apt.kubernetes.io/ kubernetes-xenial main > /etc/apt/sources.list.d/kubernetes.list' ]
+- [ apt-get, update ]
+#Install packages
+- [ apt-get, install, -y, containerd.io, kubelet=1.20.4-00, kubeadm=1.20.4-00, kubectl=1.20.4-00 ]
+- [ apt-mark, hold, kubelet, kubeadm, kubectl ]
+- [ mkdir, -p, /etc/containerd ]
+- [ sh, -c, 'containerd config default > /etc/containerd/config.toml' ]
+- [ systemctl, restart, containerd ]
+- [ /tmp/install-cni-plugin.sh, v1.2.7, v0.9.1 ]
+- [ sh, -c, 'curl -s https://download.docker.com/linux/ubuntu/gpg | apt-key add -' ]
+#iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m
+#addrtype ! --dst-type local ! -d 10.0.0.0/8 -j MASQUERADE

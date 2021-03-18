@@ -197,7 +197,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
   instances            = var.k8s_master_node_count
   admin_username       = local.admin_username
   computer_name_prefix = "vm-k8s-master"
-  #custom_data = ""
+  #custom_data = file("./")
   upgrade_mode                = "Automatic"
   health_probe_id             = azurerm_lb_probe.lbe_prb_k8s.id
   platform_fault_domain_count = 5

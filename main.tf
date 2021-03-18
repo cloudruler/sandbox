@@ -201,6 +201,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
   upgrade_mode                = "Automatic"
   health_probe_id             = azurerm_lb_probe.lbe_prb_k8s.id
   platform_fault_domain_count = 5
+  tags = { }
+  zones = [ ]
+  encryption_at_host_enabled = false
   depends_on = [
 
   ]
@@ -208,6 +211,17 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
   automatic_os_upgrade_policy {
     disable_automatic_rollback  = false
     enable_automatic_os_upgrade = true
+  }
+
+  rolling_upgrade_policy {
+    max_batch_instance_percent = 20
+    max_unhealthy_instance_percent = 20
+    max_unhealthy_upgraded_instance_percent = 20
+    pause_time_between_batches = "PT0S"
+  }
+
+  terminate_notification {
+    enabled = false
   }
 
   admin_ssh_key {

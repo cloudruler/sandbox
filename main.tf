@@ -267,8 +267,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
       content {
         name      = "pod-${config_index.value}"
         subnet_id = azurerm_subnet.snet_main.id
-        #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
-        #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
+        application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
+        load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
       }
     }
   }

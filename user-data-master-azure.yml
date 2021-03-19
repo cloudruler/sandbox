@@ -15,7 +15,7 @@ write_files:
 - path: /tmp/kubeadm-config.yml
   permissions: '0644'
   encoding: b64
-  content: |4
+  content: |
     apiVersion: kubelet.config.k8s.io/v1beta1
     kind: KubeletConfiguration
     cgroupDriver: systemd
@@ -154,7 +154,7 @@ runcmd:
 #sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock logs CONTAINERID
 #container-runtime=remote   --container-runtime-endpoint=<path>    --cgroup-driver
 #--cri-socket
-#sudo cat /var/log/cloud-init-output.log
+#sudo cat -n /var/log/cloud-init-output.log
 #grep -i -n --color error /var/log/cloud-init.log
 #cloud-init devel schema --config-file bob.txt
 

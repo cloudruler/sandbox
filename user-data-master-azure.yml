@@ -278,7 +278,7 @@ runcmd:
 - [ sh, -c, 'echo deb https://apt.kubernetes.io/ kubernetes-xenial main > /etc/apt/sources.list.d/kubernetes.list' ]
 - [ apt-get, update ]
 #Install packages
-- [ sh, -c, 'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" containerd.io' ]
+- [ sh, -c, 'apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" containerd.io' ]
 - [ apt-get, install, -y, kubelet=1.20.4-00, kubeadm=1.20.4-00, kubectl=1.20.4-00 ]
 - [ apt-mark, hold, kubelet, kubeadm, kubectl ]
 #Install Azure CNI plugin

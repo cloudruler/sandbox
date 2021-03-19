@@ -15,64 +15,13 @@ write_files:
 - path: /tmp/kubeadm-config.yml
   permissions: '0644'
   encoding: b64
-  content: |
+  content: |4
     apiVersion: kubelet.config.k8s.io/v1beta1
-    authentication:
-    anonymous:
-        enabled: false
-    webhook:
-        cacheTTL: 0s
-        enabled: true
-    x509:
-        clientCAFile: /etc/kubernetes/pki/ca.crt
-    authorization:
-    mode: Webhook
-    webhook:
-        cacheAuthorizedTTL: 0s
-        cacheUnauthorizedTTL: 0s
-    clusterDNS:
-    - 10.96.0.10
-    clusterDomain: cluster.local
-    cpuManagerReconcilePeriod: 0s
-    evictionPressureTransitionPeriod: 0s
-    fileCheckFrequency: 0s
-    healthzBindAddress: 127.0.0.1
-    healthzPort: 10248
-    httpCheckFrequency: 0s
-    imageMinimumGCAge: 0s
     kind: KubeletConfiguration
-    logging: {}
-    nodeStatusReportFrequency: 0s
-    nodeStatusUpdateFrequency: 0s
-    resolvConf: /run/systemd/resolve/resolv.conf
-    rotateCertificates: true
-    runtimeRequestTimeout: 0s
-    shutdownGracePeriod: 0s
-    shutdownGracePeriodCriticalPods: 0s
-    staticPodPath: /etc/kubernetes/manifests
-    streamingConnectionIdleTimeout: 0s
-    syncFrequency: 0s
-    volumeStatsAggPeriod: 0s
     cgroupDriver: systemd
     ---
-    apiServer:
-      timeoutForControlPlane: 4m0s
     apiVersion: kubeadm.k8s.io/v1beta2
-    certificatesDir: /etc/kubernetes/pki
-    clusterName: kubernetes
-    controllerManager: {}
-    dns:
-      type: CoreDNS
-    etcd:
-      local:
-        dataDir: /var/lib/etcd
-    imageRepository: k8s.gcr.io
     kind: ClusterConfiguration
-    kubernetesVersion: v1.20.0
-    networking:
-      dnsDomain: cluster.local
-      serviceSubnet: 10.96.0.0/12
-    scheduler: {}
 - path: /etc/modules-load.d/k8s.conf
   permissions: '0644'
   content: |
@@ -207,6 +156,7 @@ runcmd:
 #--cri-socket
 #sudo cat /var/log/cloud-init-output.log
 #grep -i -n --color error /var/log/cloud-init.log
+#cloud-init devel schema --config-file bob.txt
 
 # #Configure IP configurations inside ubuntu
 # #TODO need to assign IP addresses

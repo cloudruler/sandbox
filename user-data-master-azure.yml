@@ -4,7 +4,6 @@ ssh_authorized_keys:
     - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+HxnuN1D7vtkxABtAxRizT2RrUha45M3qBABWKBJAEJqev9gUC0zRxAwW6Eh8lhfv9jKcnekMkOZNPrR/Bx5cuv0hACDxF4nb2trcFTK2IOuaGidk3zld71jQYDnpVes9BSqcMkn9nmx8Nl7p5KPt1foTSezdZq/neiOZ/vV5r8iPmSOwxigYFP2G70P2dMFTY+KyoWDk60WAjr2g6EHSdI4GgR6kghgMAcVuljnseDJVLmYn8I/B2FSXH7APtd0h6J673S8wPZuNzIEYzm/KEobBn0EpnhyqfOjN5VLdNOUGpXb/VPNXeKaB3KoOzEh20FkaVJmNXlN0WKC1hyCl brian@DESKTOP-SFIVOEU
 package_upgrade: true
 packages: 
-#Install packages needed to use the Kubernetes apt repository:
 - apt-transport-https
 - ca-certificates
 - curl
@@ -147,7 +146,6 @@ write_files:
         pool_name = ""
         base_image_size = ""
         async_remove = false
-# kubeadm config file
 - path: /tmp/kubeadm-config.yml
   permissions: '0644'
   encoding: b64
@@ -209,20 +207,17 @@ write_files:
       dnsDomain: cluster.local
       serviceSubnet: 10.96.0.0/12
     scheduler: {}
-#Make sure that the overlay and br_netfilter module is loaded
 - path: /etc/modules-load.d/k8s.conf
   permissions: '0644'
   content: |
     overlay
     br_netfilter
-#As a requirement for your Linux Node's iptables to correctly see bridged traffic, you should ensure net.bridge.bridge-nf-call-iptables is set to 1 in your sysctl config
 - path: /etc/sysctl.d/k8s.conf
   permissions: '0644'
   content: |
     net.bridge.bridge-nf-call-ip6tables = 1
     net.bridge.bridge-nf-call-iptables  = 1
     net.ipv4.ip_forward                 = 1
-#Azure CNI network config file
 - path: /etc/cni/net.d/azure-cni.conf
   permissions: '0644'
   content: |
@@ -247,18 +242,7 @@ write_files:
             }
         ]
     }
-# #Configure IP configurations inside ubuntu
-# #TODO need to assign IP addresses
-# - path: /etc/netplan/60-static.yaml
-#   permissions: '0644'
-#   content: |
-#     network:
-#         version: 2
-#         ethernets:
-#             eth0:
-#                 addresses:
-#                     - 10.0.0.6/24
-#Install Azure CNI plugin
+
 - path: /tmp/install-cni-plugin.sh
   permissions: '0744'
   content: |
@@ -356,3 +340,17 @@ runcmd:
 #sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock logs CONTAINERID
 #container-runtime=remote   --container-runtime-endpoint=<path>    --cgroup-driver
 #--cri-socket
+#cat /var/log/cloud-init-output.log
+
+
+# #Configure IP configurations inside ubuntu
+# #TODO need to assign IP addresses
+# - path: /etc/netplan/60-static.yaml
+#   permissions: '0644'
+#   content: |
+#     network:
+#         version: 2
+#         ethernets:
+#             eth0:
+#                 addresses:
+#                     - 10.0.0.6/24

@@ -152,62 +152,12 @@ write_files:
   permissions: '0644'
   content: |
     apiVersion: kubelet.config.k8s.io/v1beta1
-    authentication:
-    anonymous:
-        enabled: false
-    webhook:
-        cacheTTL: 0s
-        enabled: true
-    x509:
-        clientCAFile: /etc/kubernetes/pki/ca.crt
-    authorization:
-    mode: Webhook
-    webhook:
-        cacheAuthorizedTTL: 0s
-        cacheUnauthorizedTTL: 0s
-    clusterDNS:
-    - 10.96.0.10
-    clusterDomain: cluster.local
-    cpuManagerReconcilePeriod: 0s
-    evictionPressureTransitionPeriod: 0s
-    fileCheckFrequency: 0s
-    healthzBindAddress: 127.0.0.1
-    healthzPort: 10248
-    httpCheckFrequency: 0s
-    imageMinimumGCAge: 0s
     kind: KubeletConfiguration
-    logging: {}
-    nodeStatusReportFrequency: 0s
-    nodeStatusUpdateFrequency: 0s
-    resolvConf: /run/systemd/resolve/resolv.conf
-    rotateCertificates: true
-    runtimeRequestTimeout: 0s
-    shutdownGracePeriod: 0s
-    shutdownGracePeriodCriticalPods: 0s
-    staticPodPath: /etc/kubernetes/manifests
-    streamingConnectionIdleTimeout: 0s
-    syncFrequency: 0s
-    volumeStatsAggPeriod: 0s
     cgroupDriver: systemd
     ---
-    apiServer:
-      timeoutForControlPlane: 4m0s
     apiVersion: kubeadm.k8s.io/v1beta2
-    certificatesDir: /etc/kubernetes/pki
-    clusterName: kubernetes
-    controllerManager: {}
-    dns:
-      type: CoreDNS
-    etcd:
-      local:
-        dataDir: /var/lib/etcd
-    imageRepository: k8s.gcr.io
     kind: ClusterConfiguration
-    kubernetesVersion: v1.20.0
-    networking:
-      dnsDomain: cluster.local
-      serviceSubnet: 10.96.0.0/12
-    scheduler: {}
+    controlPlaneEndpoint: k8s.cloudruler.io
 #Make sure that the overlay and br_netfilter module is loaded
 - path: /etc/modules-load.d/k8s.conf
   permissions: '0644'
@@ -328,7 +278,8 @@ runcmd:
 - [ sh, -c, 'echo deb https://apt.kubernetes.io/ kubernetes-xenial main > /etc/apt/sources.list.d/kubernetes.list' ]
 - [ apt-get, update ]
 #Install packages
-- [ apt-get, install, -y, containerd.io, kubelet=1.20.4-00, kubeadm=1.20.4-00, kubectl=1.20.4-00 ]
+- [ apt-get, install, -y, -o, 'Dpkg::Options::="--force-confdef"', -o, 'Dpkg::Options::="--force-confold"' containerd.io ]
+- [ apt-get, install, -y, kubelet=1.20.4-00, kubeadm=1.20.4-00, kubectl=1.20.4-00 ]
 - [ apt-mark, hold, kubelet, kubeadm, kubectl ]
 #Install Azure CNI plugin
 - [ /tmp/install-cni-plugin.sh, v1.2.7, v0.9.1 ]
@@ -336,7 +287,6 @@ runcmd:
 - [ sh, -c, 'iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d 10.1.0.0/15 -j MASQUERADE' ]
 #Install containerd as the container runtime
 - [ mkdir, -p, /etc/containerd ]
-- [ sh, -c, 'containerd config default > /etc/containerd/config.toml' ]
 - [ systemctl, restart, containerd ]
 #kubeadm config images pull --cri-socket unix:///run/containerd/containerd.sock
 #kubeadm init --control-plane-endpoint=k8s.cloudruler.io --cri-socket unix:///run/containerd/containerd.sock --config  --v=10 --pod-network-cidr 10.1.0.0/

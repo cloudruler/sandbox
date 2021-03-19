@@ -49,32 +49,6 @@ resource "azurerm_network_security_group" "nsg_main" {
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
 
-  security_rule {
-    name                                       = "allow-in-all"
-    description                                = "Allow Inbound All"
-    priority                                   = 100
-    direction                                  = "Inbound"
-    protocol                                   = "*"
-    source_address_prefix                      = "*"
-    source_port_range                          = "*"
-    destination_address_prefix                 = "*"
-    destination_port_range                     = "*"
-    access                                     = "Allow"
-  }
-
-  security_rule {
-    name                                       = "allow-out-all"
-    description                                = "Allow Outbound All"
-    priority                                   = 101
-    direction                                  = "Outbound"
-    protocol                                   = "*"
-    source_address_prefix                      = "*"
-    source_port_range                          = "*"
-    destination_address_prefix                 = "*"
-    destination_port_range                     = "*"
-    access                                     = "Allow"
-  }
-
   #Allow SSH inbound
   security_rule {
     name                       = "nsg-allow-ssh-snet-${local.landing_zone_name}"

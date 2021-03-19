@@ -190,20 +190,20 @@ data "azurerm_ssh_public_key" "ssh_public_key" {
 }
 
 resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
-  name                 = "vmss-k8s-master"
-  resource_group_name  = azurerm_resource_group.rg.name
-  location             = var.location
-  sku                  = "Standard_B2s"
-  instances            = var.k8s_master_node_count
-  admin_username       = local.admin_username
-  computer_name_prefix = "vm-k8s-master"
-  custom_data = filebase64("./user-data-master-azure.yml")
+  name                        = "vmss-k8s-master"
+  resource_group_name         = azurerm_resource_group.rg.name
+  location                    = var.location
+  sku                         = "Standard_B2s"
+  instances                   = var.k8s_master_node_count
+  admin_username              = local.admin_username
+  computer_name_prefix        = "vm-k8s-master"
+  custom_data                 = filebase64("./user-data-master-azure.yml")
   upgrade_mode                = "Automatic"
   health_probe_id             = azurerm_lb_probe.lbe_prb_k8s.id
   platform_fault_domain_count = 5
-  tags = { }
-  zones = [ ]
-  encryption_at_host_enabled = false
+  tags                        = {}
+  zones                       = []
+  encryption_at_host_enabled  = false
   depends_on = [
 
   ]
@@ -214,10 +214,10 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
   }
 
   rolling_upgrade_policy {
-    max_batch_instance_percent = 20
-    max_unhealthy_instance_percent = 20
+    max_batch_instance_percent              = 20
+    max_unhealthy_instance_percent          = 20
     max_unhealthy_upgraded_instance_percent = 20
-    pause_time_between_batches = "PT0S"
+    pause_time_between_batches              = "PT0S"
   }
 
   terminate_notification {
@@ -252,20 +252,24 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
       application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
       load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
       #public_ip_address {
-        #name              = "pip-k8s"
-        #domain_name_label = "k8s-master"
-        # ip_tag {
-        #   tag = "value"
-        #   type = "value"
-        # }
+      #name              = "pip-k8s"
+      #domain_name_label = "k8s-master"
+      # ip_tag {
+      #   tag = "value"
+      #   type = "value"
+      # }
       #}
     }
-    ip_configuration {
-      count = 30
-      name                                   = "pod-${count.index}"
-      subnet_id                              = azurerm_subnet.snet_main.id
-      #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
-      #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
+
+    dynamic "ip_configuration" {
+      for_each = range(30)
+      iterator = config_index
+      content {
+        name      = "pod-${config_index.value}"
+        subnet_id = azurerm_subnet.snet_main.id
+        #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
+        #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
+      }
     }
   }
 

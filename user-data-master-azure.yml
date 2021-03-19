@@ -278,7 +278,7 @@ runcmd:
 - [ sh, -c, 'echo deb https://apt.kubernetes.io/ kubernetes-xenial main > /etc/apt/sources.list.d/kubernetes.list' ]
 - [ apt-get, update ]
 #Install packages
-- [ apt-get, install, -y, -o, 'Dpkg::Options::="--force-confdef"', -o, 'Dpkg::Options::="--force-confold"', containerd.io ]
+- [ apt-get, install, -y, '-o Dpkg::Options::="--force-confdef"', '-o Dpkg::Options::="--force-confold"', containerd.io ]
 - [ apt-get, install, -y, kubelet=1.20.4-00, kubeadm=1.20.4-00, kubectl=1.20.4-00 ]
 - [ apt-mark, hold, kubelet, kubeadm, kubectl ]
 #Install Azure CNI plugin
@@ -294,10 +294,15 @@ runcmd:
 #sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock logs CONTAINERID
 #container-runtime=remote   --container-runtime-endpoint=<path>    --cgroup-driver
 #--cri-socket
-#sudo cat -n /var/log/cloud-init-output.log
+
 #grep -i -n --color error /var/log/cloud-init.log
+#DD
 #grep -i -n --color error /var/log/cloud-init-output.log
+#sudo cat -n /var/log/cloud-init-output.log
 #cloud-init devel schema --config-file bob.txt
+
+#kubeadm token generate
+#kubeadm certs certificate-key
 
 # #Configure IP configurations inside ubuntu
 # #TODO need to assign IP addresses

@@ -290,19 +290,21 @@ runcmd:
 - [ systemctl, restart, containerd ]
 #- [ kubeadm, init, '--cri-socket unix:///run/containerd/containerd.sock', '--config /tmp/kubeadm-config.yml' ]
 #kubeadm config images pull --cri-socket unix:///run/containerd/containerd.sock
-#kubeadm init --control-plane-endpoint=k8s.cloudruler.io --cri-socket unix:///run/containerd/containerd.sock --config  --v=10 --pod-network-cidr 10.1.0.0/
-
+#kubeadm init --control-plane-endpoint=k8s.cloudruler.io --cri-socket unix:///run/containerd/containerd.sock --config /tmp/kubeadm-config.yml --v=10 --pod-network-cidr 10.1.0.0/
 #kubeadm init --cri-socket unix:///run/containerd/containerd.sock --config /tmp/kubeadm-config.yml
 
 #sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock logs CONTAINERID
-#container-runtime=remote   --container-runtime-endpoint=<path>    --cgroup-driver
-#--cri-socket
+#sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock ps -a | grep kube | grep -v pause
+
+#container-runtime=remote   --container-runtime-endpoint=<path>    --cgroup-driver  --cri-socket
 
 #grep -i -n --color error /var/log/cloud-init.log
-#DD
+#sudo cat -n /var/log/cloud-init.log
+
 #grep -i -n --color error /var/log/cloud-init-output.log
 #sudo cat -n /var/log/cloud-init-output.log
-#cloud-init devel schema --config-file bob.txt
+
+#cloud-init devel schema --config-file /mnt/c/Users/brian/git/cloudruler/infrastructure/sandbox/user-data-master-azure.yml
 
 #kubeadm token generate
 #kubeadm certs certificate-key

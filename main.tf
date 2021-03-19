@@ -72,7 +72,8 @@ resource "azurerm_network_security_group" "nsg_main" {
     protocol                                   = "Tcp"
     source_address_prefix                      = "*"
     source_port_range                          = "*"
-    destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id, azurerm_application_security_group.asg_k8s_workers.id]
+    destination_address_prefix                 = "*"
+    #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id, azurerm_application_security_group.asg_k8s_workers.id]
     destination_port_range                     = "10250"
     access                                     = "Allow"
   }
@@ -85,7 +86,8 @@ resource "azurerm_network_security_group" "nsg_main" {
     protocol                                   = "Tcp"
     source_address_prefix                      = "*"
     source_port_range                          = "*"
-    destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
+    destination_address_prefix                 = "*"
+    #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
     destination_port_range                     = "10251"
     access                                     = "Allow"
   }
@@ -99,7 +101,8 @@ resource "azurerm_network_security_group" "nsg_main" {
     protocol                                   = "Tcp"
     source_address_prefix                      = "*"
     source_port_range                          = "*"
-    destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
+    destination_address_prefix                 = "*"
+    #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
     destination_port_range                     = "6443"
     access                                     = "Allow"
   }
@@ -112,7 +115,8 @@ resource "azurerm_network_security_group" "nsg_main" {
     protocol                                   = "Tcp"
     source_address_prefix                      = "*"
     source_port_range                          = "*"
-    destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
+    destination_address_prefix                 = "*"
+    #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
     destination_port_range                     = "2379-2380"
     access                                     = "Allow"
   }
@@ -125,7 +129,8 @@ resource "azurerm_network_security_group" "nsg_main" {
     protocol                                   = "Tcp"
     source_address_prefix                      = "*"
     source_port_range                          = "*"
-    destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
+    destination_address_prefix                 = "*"
+    #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
     destination_port_range                     = "10252"
     access                                     = "Allow"
   }

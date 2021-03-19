@@ -278,7 +278,7 @@ runcmd:
 - [ sh, -c, 'echo deb https://apt.kubernetes.io/ kubernetes-xenial main > /etc/apt/sources.list.d/kubernetes.list' ]
 - [ apt-get, update ]
 #Install packages
-- [ apt-get, install, -y, '-o Dpkg::Options::="--force-confdef"', '-o Dpkg::Options::="--force-confold"', containerd.io ]
+- [ sh, -c, 'apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" containerd.io' ]
 - [ apt-get, install, -y, kubelet=1.20.4-00, kubeadm=1.20.4-00, kubectl=1.20.4-00 ]
 - [ apt-mark, hold, kubelet, kubeadm, kubectl ]
 #Install Azure CNI plugin
@@ -288,9 +288,12 @@ runcmd:
 #Install containerd as the container runtime
 - [ mkdir, -p, /etc/containerd ]
 - [ systemctl, restart, containerd ]
+#- [ kubeadm, init, '--cri-socket unix:///run/containerd/containerd.sock', '--config /tmp/kubeadm-config.yml' ]
 #kubeadm config images pull --cri-socket unix:///run/containerd/containerd.sock
 #kubeadm init --control-plane-endpoint=k8s.cloudruler.io --cri-socket unix:///run/containerd/containerd.sock --config  --v=10 --pod-network-cidr 10.1.0.0/
-#sudo 
+
+#kubeadm init --cri-socket unix:///run/containerd/containerd.sock --config /tmp/kubeadm-config.yml
+
 #sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock logs CONTAINERID
 #container-runtime=remote   --container-runtime-endpoint=<path>    --cgroup-driver
 #--cri-socket

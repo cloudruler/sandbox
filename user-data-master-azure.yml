@@ -304,6 +304,10 @@ runcmd:
 #grep -i -n --color error /var/log/cloud-init-output.log
 #sudo cat -n /var/log/cloud-init-output.log
 
+#sudo systemctl status kubelet
+#sudo journalctl -xeu kubelet
+
+
 #cloud-init devel schema --config-file /mnt/c/Users/brian/git/cloudruler/infrastructure/sandbox/user-data-master-azure.yml
 
 #kubeadm token generate
@@ -320,3 +324,14 @@ runcmd:
 #             eth0:
 #                 addresses:
 #                     - 10.0.0.6/24
+
+
+#https://k8s.cloudruler.io:6443/api/v1/pods?fieldSelector=spec.nodeName%3Dvm-k8s-master000000&limit=500&resourceVersion=0
+#https://k8s.cloudruler.io:6443/api/v1/services?limit=500&resourceVersion=0
+#https://k8s.cloudruler.io:6443/api/v1/namespaces/default/events
+
+#kubelet "times out" trying to register the node with the API server
+#HTTP get and post to API server fails from kubelet
+#i can curl API server from the node
+#try setting configuration values
+#try connecting kubectl to the API server

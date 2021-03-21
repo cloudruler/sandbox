@@ -58,81 +58,81 @@ resource "azurerm_network_security_group" "nsg_main" {
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "22"
+    destination_port_range     = "22,6443,icmp"
     source_address_prefix      = "*"
     destination_address_prefix = "VirtualNetwork"
   }
 
   #k8s master/worker node rules
   security_rule {
-    name                                       = "allow-in-kubelet-api"
-    description                                = "Allow Inbound to kubelet API (used by self, control plane)"
-    priority                                   = 1002
-    direction                                  = "Inbound"
-    protocol                                   = "Tcp"
-    source_address_prefix                      = "*"
-    source_port_range                          = "*"
-    destination_address_prefix                 = "*"
+    name                       = "allow-in-kubelet-api"
+    description                = "Allow Inbound to kubelet API (used by self, control plane)"
+    priority                   = 1002
+    direction                  = "Inbound"
+    protocol                   = "Tcp"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
+    destination_address_prefix = "*"
     #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id, azurerm_application_security_group.asg_k8s_workers.id]
-    destination_port_range                     = "10250"
-    access                                     = "Allow"
+    destination_port_range = "10250"
+    access                 = "Allow"
   }
 
   security_rule {
-    name                                       = "allow-in-kube-scheduler"
-    description                                = "Allow Inbound to kube-scheduler (used by self)"
-    priority                                   = 1003
-    direction                                  = "Inbound"
-    protocol                                   = "Tcp"
-    source_address_prefix                      = "*"
-    source_port_range                          = "*"
-    destination_address_prefix                 = "*"
+    name                       = "allow-in-kube-scheduler"
+    description                = "Allow Inbound to kube-scheduler (used by self)"
+    priority                   = 1003
+    direction                  = "Inbound"
+    protocol                   = "Tcp"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
+    destination_address_prefix = "*"
     #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
-    destination_port_range                     = "10251"
-    access                                     = "Allow"
+    destination_port_range = "10251"
+    access                 = "Allow"
   }
 
   #k8s master
   security_rule {
-    name                                       = "allow-in-k8s-api"
-    description                                = "Allow Inbound to Kubernetes API server"
-    priority                                   = 1004
-    direction                                  = "Inbound"
-    protocol                                   = "Tcp"
-    source_address_prefix                      = "*"
-    source_port_range                          = "*"
-    destination_address_prefix                 = "*"
+    name                       = "allow-in-k8s-api"
+    description                = "Allow Inbound to Kubernetes API server"
+    priority                   = 1004
+    direction                  = "Inbound"
+    protocol                   = "Tcp"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
+    destination_address_prefix = "*"
     #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
-    destination_port_range                     = "6443"
-    access                                     = "Allow"
+    destination_port_range = "6443"
+    access                 = "Allow"
   }
 
   security_rule {
-    name                                       = "allow-in-etcd-clientapi"
-    description                                = "Allow Inbound to etcd server client API (used by kube-apiserver, etcd)"
-    priority                                   = 1005
-    direction                                  = "Inbound"
-    protocol                                   = "Tcp"
-    source_address_prefix                      = "*"
-    source_port_range                          = "*"
-    destination_address_prefix                 = "*"
+    name                       = "allow-in-etcd-clientapi"
+    description                = "Allow Inbound to etcd server client API (used by kube-apiserver, etcd)"
+    priority                   = 1005
+    direction                  = "Inbound"
+    protocol                   = "Tcp"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
+    destination_address_prefix = "*"
     #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
-    destination_port_range                     = "2379-2380"
-    access                                     = "Allow"
+    destination_port_range = "2379-2380"
+    access                 = "Allow"
   }
 
   security_rule {
-    name                                       = "allow-in-kube-controller-manager"
-    description                                = "Allow Inbound to kube-controller-manager (used by self)"
-    priority                                   = 1006
-    direction                                  = "Inbound"
-    protocol                                   = "Tcp"
-    source_address_prefix                      = "*"
-    source_port_range                          = "*"
-    destination_address_prefix                 = "*"
+    name                       = "allow-in-kube-controller-manager"
+    description                = "Allow Inbound to kube-controller-manager (used by self)"
+    priority                   = 1006
+    direction                  = "Inbound"
+    protocol                   = "Tcp"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
+    destination_address_prefix = "*"
     #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
-    destination_port_range                     = "10252"
-    access                                     = "Allow"
+    destination_port_range = "10252"
+    access                 = "Allow"
   }
 }
 
@@ -142,7 +142,8 @@ resource "azurerm_subnet_network_security_group_association" "nsg_snet_main" {
 }
 
 locals {
-  admin_username = "cloudruleradmin"
+  admin_username      = "cloudruleradmin"
+  number_of_k8s_nodes = 1
 }
 
 data "azurerm_public_ip" "pip_k8s" {
@@ -194,40 +195,45 @@ data "azurerm_ssh_public_key" "ssh_public_key" {
   name                = "ssh-cloudruler"
 }
 
-resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
-  name                        = "vmss-k8s-master"
-  resource_group_name         = azurerm_resource_group.rg.name
-  location                    = var.location
-  sku                         = "Standard_B2s"
-  instances                   = var.k8s_master_node_count
-  admin_username              = local.admin_username
-  computer_name_prefix        = "vm-k8s-master"
-  custom_data                 = filebase64("./user-data-master-azure.yml")
-  upgrade_mode                = "Automatic"
-  health_probe_id             = azurerm_lb_probe.lbe_prb_k8s.id
-  platform_fault_domain_count = 5
-  tags                        = {}
-  zones                       = []
-  encryption_at_host_enabled  = false
-  depends_on = [
+resource "azurerm_network_interface" "nic_k8s_master" {
+  count               = local.number_of_k8s_nodes
+  name                = "nic-k8s-master"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
 
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.snet_main.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.1.1.${count.index * 31}"
+    primary                       = true
+  }
+
+  dynamic "ip_configuration" {
+    for_each = range(30)
+    iterator = config_index
+    content {
+      name      = "pod-${config_index.value}"
+      subnet_id = azurerm_subnet.snet_main.id
+      #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
+      #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
+      private_ip_address_allocation = "Static"
+      private_ip_address            = "10.1.1.${count.index * 31 + config_index.value + 1}"
+    }
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
+  count               = local.number_of_k8s_nodes
+  name                = "nic-k8s-master"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = var.location
+  size                = "Standard_B2s"
+  #custom_data                 = filebase64("./user-data-master-azure.yml")
+  admin_username = local.admin_username
+  network_interface_ids = [
+    azurerm_network_interface.nic_k8s_master[count.index].id,
   ]
-
-  automatic_os_upgrade_policy {
-    disable_automatic_rollback  = false
-    enable_automatic_os_upgrade = true
-  }
-
-  rolling_upgrade_policy {
-    max_batch_instance_percent              = 20
-    max_unhealthy_instance_percent          = 20
-    max_unhealthy_upgraded_instance_percent = 20
-    pause_time_between_batches              = "PT0S"
-  }
-
-  terminate_notification {
-    enabled = false
-  }
 
   admin_ssh_key {
     username   = local.admin_username
@@ -246,43 +252,114 @@ resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
     version   = "latest"
   }
 
-  network_interface {
-    name    = "nic-k8s-master"
-    primary = true
-    #network_security_group_id = "value"
-    ip_configuration {
-      name                                   = "internal"
-      primary                                = true
-      subnet_id                              = azurerm_subnet.snet_main.id
-      application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
-      load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
-      #public_ip_address {
-      #name              = "pip-k8s"
-      #domain_name_label = "k8s-master"
-      # ip_tag {
-      #   tag = "value"
-      #   type = "value"
-      # }
-      #}
-    }
-
-    dynamic "ip_configuration" {
-      for_each = range(30)
-      iterator = config_index
-      content {
-        name      = "pod-${config_index.value}"
-        subnet_id = azurerm_subnet.snet_main.id
-        application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
-        load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
-      }
-    }
-  }
-
   identity {
     type = "SystemAssigned"
   }
-
-  boot_diagnostics {
-
-  }
 }
+
+resource "azurerm_network_interface_application_security_group_association" "asg_k8s_masters_nic_k8s_master" {
+  count                         = local.number_of_k8s_nodes
+  network_interface_id          = azurerm_network_interface.nic_k8s_master[count.index].id
+  application_security_group_id = azurerm_application_security_group.asg_k8s_masters.id
+}
+
+resource "azurerm_lb_backend_address_pool_address" "lb_bep_k8s_addr" {
+  count                   = local.number_of_k8s_nodes * 31
+  name                    = "lb-bep-k8s-addr-${count.index}"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s.id
+  virtual_network_id      = azurerm_virtual_network.vnet_zone.id
+  ip_address              = "10.1.1.${count.index}"
+}
+
+# resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
+#   name                        = "vmss-k8s-master"
+#   resource_group_name         = azurerm_resource_group.rg.name
+#   location                    = var.location
+#   sku                         = "Standard_B2s"
+#   instances                   = var.k8s_master_node_count
+#   admin_username              = local.admin_username
+#   computer_name_prefix        = "vm-k8s-master"
+#   custom_data                 = filebase64("./user-data-master-azure.yml")
+#   upgrade_mode                = "Automatic"
+#   health_probe_id             = azurerm_lb_probe.lbe_prb_k8s.id
+#   platform_fault_domain_count = 5
+#   tags                        = {}
+#   zones                       = []
+#   encryption_at_host_enabled  = false
+#   depends_on = [
+
+#   ]
+
+#   automatic_os_upgrade_policy {
+#     disable_automatic_rollback  = false
+#     enable_automatic_os_upgrade = true
+#   }
+
+#   rolling_upgrade_policy {
+#     max_batch_instance_percent              = 20
+#     max_unhealthy_instance_percent          = 20
+#     max_unhealthy_upgraded_instance_percent = 20
+#     pause_time_between_batches              = "PT0S"
+#   }
+
+#   terminate_notification {
+#     enabled = false
+#   }
+
+#   admin_ssh_key {
+#     username   = local.admin_username
+#     public_key = data.azurerm_ssh_public_key.ssh_public_key.public_key
+#   }
+
+#   os_disk {
+#     caching              = "ReadWrite"
+#     storage_account_type = "Standard_LRS"
+#   }
+
+#   source_image_reference {
+#     publisher = "Canonical"
+#     offer     = "UbuntuServer"
+#     sku       = "18.04-LTS"
+#     version   = "latest"
+#   }
+
+#   network_interface {
+#     name    = "nic-k8s-master"
+#     primary = true
+#     #network_security_group_id = "value"
+#     ip_configuration {
+#       name                                   = "internal"
+#       primary                                = true
+#       subnet_id                              = azurerm_subnet.snet_main.id
+#       application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
+#       load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
+#       #public_ip_address {
+#       #name              = "pip-k8s"
+#       #domain_name_label = "k8s-master"
+#       # ip_tag {
+#       #   tag = "value"
+#       #   type = "value"
+#       # }
+#       #}
+#     }
+
+#     dynamic "ip_configuration" {
+#       for_each = range(30)
+#       iterator = config_index
+#       content {
+#         name      = "pod-${config_index.value}"
+#         subnet_id = azurerm_subnet.snet_main.id
+#         application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
+#         load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
+#       }
+#     }
+#   }
+
+#   identity {
+#     type = "SystemAssigned"
+#   }
+
+#   boot_diagnostics {
+
+#   }
+# }

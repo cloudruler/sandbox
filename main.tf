@@ -56,9 +56,9 @@ resource "azurerm_network_security_group" "nsg_main" {
     priority                   = 1001
     direction                  = "Inbound"
     access                     = "Allow"
-    protocol                   = "Tcp"
+    protocol                   = "Tcp,Icmp"
     source_port_range          = "*"
-    destination_port_range     = "22,6443,icmp"
+    destination_port_range     = "22,6443"
     source_address_prefix      = "*"
     destination_address_prefix = "VirtualNetwork"
   }

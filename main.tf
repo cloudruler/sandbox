@@ -56,9 +56,21 @@ resource "azurerm_network_security_group" "nsg_main" {
     priority                   = 1001
     direction                  = "Inbound"
     access                     = "Allow"
-    protocol                   = "Tcp,Icmp"
+    protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "22,6443"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "VirtualNetwork"
+  }
+
+  #Allow ICMP inbound
+  security_rule {
+    name                       = "nsg-allow-icmp-snet-${local.landing_zone_name}"
+    description                = "Allow Inbound ICMP"
+    priority                   = 1002
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Icmp"
     source_address_prefix      = "*"
     destination_address_prefix = "VirtualNetwork"
   }
@@ -67,7 +79,7 @@ resource "azurerm_network_security_group" "nsg_main" {
   security_rule {
     name                       = "allow-in-kubelet-api"
     description                = "Allow Inbound to kubelet API (used by self, control plane)"
-    priority                   = 1002
+    priority                   = 1003
     direction                  = "Inbound"
     protocol                   = "Tcp"
     source_address_prefix      = "*"
@@ -81,7 +93,7 @@ resource "azurerm_network_security_group" "nsg_main" {
   security_rule {
     name                       = "allow-in-kube-scheduler"
     description                = "Allow Inbound to kube-scheduler (used by self)"
-    priority                   = 1003
+    priority                   = 1004
     direction                  = "Inbound"
     protocol                   = "Tcp"
     source_address_prefix      = "*"
@@ -96,7 +108,7 @@ resource "azurerm_network_security_group" "nsg_main" {
   security_rule {
     name                       = "allow-in-k8s-api"
     description                = "Allow Inbound to Kubernetes API server"
-    priority                   = 1004
+    priority                   = 1005
     direction                  = "Inbound"
     protocol                   = "Tcp"
     source_address_prefix      = "*"
@@ -110,7 +122,7 @@ resource "azurerm_network_security_group" "nsg_main" {
   security_rule {
     name                       = "allow-in-etcd-clientapi"
     description                = "Allow Inbound to etcd server client API (used by kube-apiserver, etcd)"
-    priority                   = 1005
+    priority                   = 1006
     direction                  = "Inbound"
     protocol                   = "Tcp"
     source_address_prefix      = "*"
@@ -124,7 +136,7 @@ resource "azurerm_network_security_group" "nsg_main" {
   security_rule {
     name                       = "allow-in-kube-controller-manager"
     description                = "Allow Inbound to kube-controller-manager (used by self)"
-    priority                   = 1006
+    priority                   = 1007
     direction                  = "Inbound"
     protocol                   = "Tcp"
     source_address_prefix      = "*"

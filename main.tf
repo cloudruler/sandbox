@@ -157,7 +157,7 @@ resource "azurerm_subnet_network_security_group_association" "nsg_snet_main" {
 
 locals {
   admin_username      = "cloudruleradmin"
-  number_of_k8s_nodes = 1
+  number_of_k8s_nodes = 3
 }
 
 data "azurerm_public_ip" "pip_k8s" {
@@ -219,7 +219,7 @@ resource "azurerm_network_interface" "nic_k8s_master" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.snet_main.id
     private_ip_address_allocation = "Static"
-    private_ip_address            = "10.1.1.${count.index * 31}"
+    private_ip_address            = "10.1.1.${count.index * 31 + 1}"
     primary                       = true
   }
 
@@ -232,7 +232,7 @@ resource "azurerm_network_interface" "nic_k8s_master" {
       #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
       #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
       private_ip_address_allocation = "Static"
-      private_ip_address            = "10.1.1.${count.index * 31 + config_index.value + 1}"
+      private_ip_address            = "10.1.1.${count.index * 31 + config_index.value + 2}"
     }
   }
 }
@@ -282,7 +282,7 @@ resource "azurerm_lb_backend_address_pool_address" "lb_bep_k8s_addr" {
   name                    = "lb-bep-k8s-addr-${count.index}"
   backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s.id
   virtual_network_id      = azurerm_virtual_network.vnet_zone.id
-  ip_address              = "10.1.1.${count.index}"
+  ip_address              = "10.1.1.${count.index + 1}"
 }
 
 # resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {

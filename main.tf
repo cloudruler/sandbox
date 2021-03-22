@@ -164,10 +164,17 @@ locals {
   master_number_of_ips           = local.master_number_of_pods + 1
   worker_number_of_ips           = local.worker_number_of_pods + 1
   master_ip_start                = 4 #Skip 0-3 which are reserved
-  worker_ip_start                = local.number_of_k8s_master_nodes * (local.worker_number_of_pods + 1)
+  worker_ip_start                = local.master_ip_start + local.number_of_k8s_master_nodes * (local.worker_number_of_pods + 1)
   frontend_ip_configuration_name = "ipconfig-lbe-k8s"
 }
-
+#10.1.1.0/24
+#10.1.1.4 to 10.1.1.254
+#Master node 1: 10.1.1.4 to 10.1.1.34
+#Master node 2: 10.1.1.35 to 10.1.1.65
+#Master node 3: 10.1.1.66 to 10.1.1.96
+#Worker node 1: 10.1.1.97 to 10.1.1.127
+#Worker node 2: 10.1.1.128 to 10.1.1.158
+#Worker node 3: 10.1.1.159 to 10.1.1.189
 data "azurerm_public_ip" "pip_k8s" {
   name                = "pip-k8s"
   resource_group_name = var.connectivity_resource_group_name
@@ -286,7 +293,7 @@ resource "azurerm_lb_backend_address_pool_address" "lb_bep_k8s_addr" {
   name                    = "lb-bep-k8s-addr-${count.index}"
   backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s.id
   virtual_network_id      = azurerm_virtual_network.vnet_zone.id
-  ip_address              = "10.1.1.${local.master_ip_start + count.index + 1}"
+  ip_address              = "10.1.1.${local.master_ip_start + count.index * local.master_number_of_ips}"
 }
 
 

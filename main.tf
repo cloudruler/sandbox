@@ -156,17 +156,21 @@ resource "azurerm_subnet_network_security_group_association" "nsg_snet_main" {
 }
 
 locals {
-  admin_username      = "cloudruleradmin"
-  number_of_k8s_nodes = 3
+  admin_username                 = "cloudruleradmin"
+  number_of_k8s_master_nodes     = 3
+  number_of_k8s_worker_nodes     = 3
+  master_number_of_pods          = 30
+  worker_number_of_pods          = 30
+  master_number_of_ips           = local.master_number_of_pods + 1
+  worker_number_of_ips           = local.worker_number_of_pods + 1
+  master_ip_start                = 4 #Skip 0-3 which are reserved
+  worker_ip_start                = local.number_of_k8s_master_nodes * (local.worker_number_of_pods + 1)
+  frontend_ip_configuration_name = "ipconfig-lbe-k8s"
 }
 
 data "azurerm_public_ip" "pip_k8s" {
   name                = "pip-k8s"
   resource_group_name = var.connectivity_resource_group_name
-}
-
-locals {
-  frontend_ip_configuration_name = "ipconfig-lbe-k8s"
 }
 
 resource "azurerm_lb" "lbe_k8s" {
@@ -210,36 +214,36 @@ data "azurerm_ssh_public_key" "ssh_public_key" {
 }
 
 resource "azurerm_network_interface" "nic_k8s_master" {
-  count               = local.number_of_k8s_nodes
-  name                = "nic-k8s-master"
+  count               = local.number_of_k8s_master_nodes
+  name                = "nic-k8s-master-${count.index}"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
 
   ip_configuration {
-    name                          = "internal"
+    name                          = "internal-${count.index}"
     subnet_id                     = azurerm_subnet.snet_main.id
     private_ip_address_allocation = "Static"
-    private_ip_address            = "10.1.1.${count.index * 31 + 1}"
+    private_ip_address            = "10.1.1.${local.master_ip_start + count.index * local.master_number_of_ips}"
     primary                       = true
   }
 
   dynamic "ip_configuration" {
-    for_each = range(30)
+    for_each = range(local.master_number_of_pods)
     iterator = config_index
     content {
-      name      = "pod-${config_index.value}"
+      name      = "nic-k8s-master-${count.index}-pod-${config_index.value}"
       subnet_id = azurerm_subnet.snet_main.id
       #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
       #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
       private_ip_address_allocation = "Static"
-      private_ip_address            = "10.1.1.${count.index * 31 + config_index.value + 2}"
+      private_ip_address            = "10.1.1.${local.master_ip_start + count.index * local.master_number_of_ips + config_index.value + 1}"
     }
   }
 }
 
 resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
-  count               = local.number_of_k8s_nodes
-  name                = "nic-k8s-master"
+  count               = local.number_of_k8s_master_nodes
+  name                = "nic-k8s-master-${count.index}"
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.location
   size                = "Standard_B2s"
@@ -272,18 +276,103 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
 }
 
 resource "azurerm_network_interface_application_security_group_association" "asg_k8s_masters_nic_k8s_master" {
-  count                         = local.number_of_k8s_nodes
+  count                         = local.number_of_k8s_master_nodes
   network_interface_id          = azurerm_network_interface.nic_k8s_master[count.index].id
   application_security_group_id = azurerm_application_security_group.asg_k8s_masters.id
 }
 
 resource "azurerm_lb_backend_address_pool_address" "lb_bep_k8s_addr" {
-  count                   = local.number_of_k8s_nodes * 31
+  count                   = local.number_of_k8s_master_nodes
   name                    = "lb-bep-k8s-addr-${count.index}"
   backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s.id
   virtual_network_id      = azurerm_virtual_network.vnet_zone.id
-  ip_address              = "10.1.1.${count.index + 1}"
+  ip_address              = "10.1.1.${local.master_ip_start + count.index + 1}"
 }
+
+
+
+
+
+
+
+
+
+resource "azurerm_network_interface" "nic_k8s_worker" {
+  count               = local.number_of_k8s_worker_nodes
+  name                = "nic-k8s-worker-${count.index}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  ip_configuration {
+    name                          = "internal-${count.index}"
+    subnet_id                     = azurerm_subnet.snet_main.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.1.1.${local.worker_ip_start + count.index * local.worker_number_of_ips}"
+    primary                       = true
+  }
+
+  dynamic "ip_configuration" {
+    for_each = range(local.worker_number_of_pods)
+    iterator = config_index
+    content {
+      name      = "nic-k8s-worker-${count.index}-pod-${config_index.value}"
+      subnet_id = azurerm_subnet.snet_main.id
+      #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_workers.id]
+      #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
+      private_ip_address_allocation = "Static"
+      private_ip_address            = "10.1.1.${local.worker_ip_start + count.index * local.worker_number_of_ips + config_index.value + 1}"
+    }
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
+  count               = local.number_of_k8s_worker_nodes
+  name                = "nic-k8s-worker-${count.index}"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = var.location
+  size                = "Standard_B2s"
+  #custom_data                 = filebase64("./user-data-worker-azure.yml")
+  admin_username = local.admin_username
+  network_interface_ids = [
+    azurerm_network_interface.nic_k8s_worker[count.index].id,
+  ]
+
+  admin_ssh_key {
+    username   = local.admin_username
+    public_key = data.azurerm_ssh_public_key.ssh_public_key.public_key
+  }
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
+
+  identity {
+    type = "SystemAssigned"
+  }
+}
+
+resource "azurerm_network_interface_application_security_group_association" "asg_k8s_workers_nic_k8s_worker" {
+  count                         = local.number_of_k8s_worker_nodes
+  network_interface_id          = azurerm_network_interface.nic_k8s_worker[count.index].id
+  application_security_group_id = azurerm_application_security_group.asg_k8s_workers.id
+}
+
+
+
+
+
+
+
+
+
 
 # resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
 #   name                        = "vmss-k8s-master"

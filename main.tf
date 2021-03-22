@@ -250,7 +250,7 @@ resource "azurerm_network_interface" "nic_k8s_master" {
 
 resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   count               = local.number_of_k8s_master_nodes
-  name                = "nic-k8s-master-${count.index}"
+  name                = "vm-k8s-master-${count.index}"
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.location
   size                = "Standard_B2s"
@@ -266,6 +266,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   }
 
   os_disk {
+    name = "osdisk-k8s-master-${count.index}"
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
   }
@@ -334,7 +335,7 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
 
 resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
   count               = local.number_of_k8s_worker_nodes
-  name                = "nic-k8s-worker-${count.index}"
+  name                = "vm-k8s-worker-${count.index}"
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.location
   size                = "Standard_B2s"
@@ -350,6 +351,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
   }
 
   os_disk {
+    name = "osdisk-k8s-worker-${count.index}"
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
   }

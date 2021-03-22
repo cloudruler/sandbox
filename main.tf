@@ -189,6 +189,19 @@ resource "azurerm_lb" "lbe_k8s" {
     name                 = local.frontend_ip_configuration_name
     public_ip_address_id = data.azurerm_public_ip.pip_k8s.id
   }
+
+  # dynamic "frontend_ip_configuration" {
+  #   for_each = range(local.number_of_k8s_master_nodes)
+  #   iterator = config_index
+  #   content {
+  #     name      = "ipconfig-nat-k8s-master-${count.index}"
+  #     subnet_id = azurerm_subnet.snet_main.id
+  #     #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
+  #     #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
+  #     private_ip_address_allocation = "Static"
+  #     private_ip_address            = "10.1.1.${local.master_ip_start + count.index * local.master_number_of_ips + config_index.value + 1}"
+  #   }
+  # }
 }
 
 resource "azurerm_lb_backend_address_pool" "lbe_bep_k8s" {
@@ -374,7 +387,41 @@ resource "azurerm_network_interface_application_security_group_association" "asg
   application_security_group_id = azurerm_application_security_group.asg_k8s_workers.id
 }
 
+resource "azurerm_lb_nat_rule" "lb_nat_k8s_master" {
+  count                          = local.number_of_k8s_master_nodes
+  resource_group_name            = azurerm_resource_group.rg.name
+  loadbalancer_id                = azurerm_lb.lbe_k8s.id
+  name                           = "nat-ssh-master-${count.index}"
+  protocol                       = "Tcp"
+  frontend_port                  = count.index + 1
+  backend_port                   = 22
+  frontend_ip_configuration_name = local.frontend_ip_configuration_name
+}
 
+resource "azurerm_network_interface_nat_rule_association" "nic_k8s_master_lb_nat_k8s_master" {
+  count                 = local.number_of_k8s_master_nodes
+  network_interface_id  = azurerm_network_interface.nic_k8s_master[count.index].id
+  ip_configuration_name = "internal-${count.index}"
+  nat_rule_id           = azurerm_lb_nat_rule.lb_nat_k8s_master[count.index].id
+}
+
+resource "azurerm_lb_nat_rule" "lb_nat_k8s_worker" {
+  count                          = local.number_of_k8s_worker_nodes
+  resource_group_name            = azurerm_resource_group.rg.name
+  loadbalancer_id                = azurerm_lb.lbe_k8s.id
+  name                           = "nat-ssh-worker-${count.index}"
+  protocol                       = "Tcp"
+  frontend_port                  = local.number_of_k8s_master_nodes + count.index + 1
+  backend_port                   = 22
+  frontend_ip_configuration_name = local.frontend_ip_configuration_name
+}
+
+resource "azurerm_network_interface_nat_rule_association" "nic_k8s_worker_lb_nat_k8s_worker" {
+  count                 = local.number_of_k8s_worker_nodes
+  network_interface_id  = azurerm_network_interface.nic_k8s_worker[count.index].id
+  ip_configuration_name = "internal-${count.index}"
+  nat_rule_id           = azurerm_lb_nat_rule.lb_nat_k8s_worker[count.index].id
+}
 
 
 

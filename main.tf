@@ -72,7 +72,9 @@ resource "azurerm_network_security_group" "nsg_main" {
     access                     = "Allow"
     protocol                   = "Icmp"
     source_address_prefix      = "*"
+    source_port_range          = "*"
     destination_address_prefix = "VirtualNetwork"
+    destination_port_range     = "*"
   }
 
   #k8s master/worker node rules

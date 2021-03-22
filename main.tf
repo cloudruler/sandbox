@@ -266,7 +266,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   }
 
   os_disk {
-    name = "osdisk-k8s-master-${count.index}"
+    name                 = "osdisk-k8s-master-${count.index}"
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
   }
@@ -351,7 +351,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
   }
 
   os_disk {
-    name = "osdisk-k8s-worker-${count.index}"
+    name                 = "osdisk-k8s-worker-${count.index}"
     caching              = "ReadWrite"
     storage_account_type = "Standard_LRS"
   }

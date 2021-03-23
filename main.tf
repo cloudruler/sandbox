@@ -297,11 +297,11 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   }
 }
 
-resource "azurerm_network_interface_application_security_group_association" "asg_k8s_masters_nic_k8s_master" {
-  count                         = local.number_of_k8s_master_nodes
-  network_interface_id          = azurerm_network_interface.nic_k8s_master[count.index].id
-  application_security_group_id = azurerm_application_security_group.asg_k8s_masters.id
-}
+# resource "azurerm_network_interface_application_security_group_association" "asg_k8s_masters_nic_k8s_master" {
+#   count                         = local.number_of_k8s_master_nodes
+#   network_interface_id          = azurerm_network_interface.nic_k8s_master[count.index].id
+#   application_security_group_id = azurerm_application_security_group.asg_k8s_masters.id
+# }
 
 resource "azurerm_lb_backend_address_pool_address" "lb_bep_k8s_addr" {
   count                   = local.number_of_k8s_master_nodes
@@ -339,8 +339,6 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
     content {
       name      = "nic-k8s-worker-${count.index}-pod-${config_index.value}"
       subnet_id = azurerm_subnet.snet_main.id
-      #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_workers.id]
-      #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
       private_ip_address_allocation = "Static"
       private_ip_address            = "10.1.1.${local.worker_ip_start + count.index * local.worker_number_of_ips + config_index.value + 1}"
     }
@@ -382,11 +380,11 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
   }
 }
 
-resource "azurerm_network_interface_application_security_group_association" "asg_k8s_workers_nic_k8s_worker" {
-  count                         = local.number_of_k8s_worker_nodes
-  network_interface_id          = azurerm_network_interface.nic_k8s_worker[count.index].id
-  application_security_group_id = azurerm_application_security_group.asg_k8s_workers.id
-}
+# resource "azurerm_network_interface_application_security_group_association" "asg_k8s_workers_nic_k8s_worker" {
+#   count                         = local.number_of_k8s_worker_nodes
+#   network_interface_id          = azurerm_network_interface.nic_k8s_worker[count.index].id
+#   application_security_group_id = azurerm_application_security_group.asg_k8s_workers.id
+# }
 
 resource "azurerm_lb_nat_rule" "lb_nat_k8s_master" {
   count                          = local.number_of_k8s_master_nodes

@@ -28,7 +28,7 @@ cat > ca-csr.json <<EOF
     {
       "C": "US",
       "L": "Sugar Land",
-      "O": "Kubernetes",
+      "O": "Cloud Ruler",
       "OU": "CA",
       "ST": "Texas"
     }
@@ -218,8 +218,8 @@ cat > kubernetes-csr.json <<EOF
     {
       "C": "US",
       "L": "Sugar Land",
-      "O": "Kubernetes",
-      "OU": "Cloud Ruler",
+      "O": "Cloud Ruler",
+      "OU": "Kubernetes",
       "ST": "Texas"
     }
   ]
@@ -251,8 +251,8 @@ cat > service-account-csr.json <<EOF
     {
       "C": "US",
       "L": "Sugar Land",
-      "O": "Kubernetes",
-      "OU": "Cloud Ruler",
+      "O": "Cloud Ruler",
+      "OU": "Kubernetes",
       "ST": "Texas"
     }
   ]

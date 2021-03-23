@@ -247,18 +247,19 @@ resource "azurerm_network_interface" "nic_k8s_master" {
     primary                       = true
   }
 
-  dynamic "ip_configuration" {
-    for_each = range(local.master_number_of_pods)
-    iterator = config_index
-    content {
-      name      = "nic-k8s-master-${count.index}-pod-${config_index.value}"
-      subnet_id = azurerm_subnet.snet_main.id
-      #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
-      #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
-      private_ip_address_allocation = "Static"
-      private_ip_address            = "10.1.1.${local.master_ip_start + count.index * local.master_number_of_ips + config_index.value + 1}"
-    }
-  }
+  #No point in allocating pod CIDR for master nodes
+  # dynamic "ip_configuration" {
+  #   for_each = range(local.master_number_of_pods)
+  #   iterator = config_index
+  #   content {
+  #     name      = "nic-k8s-master-${count.index}-pod-${config_index.value}"
+  #     subnet_id = azurerm_subnet.snet_main.id
+  #     #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
+  #     #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s.id]
+  #     private_ip_address_allocation = "Static"
+  #     private_ip_address            = "10.1.1.${local.master_ip_start + count.index * local.master_number_of_ips + config_index.value + 1}"
+  #   }
+  # }
 }
 
 resource "azurerm_linux_virtual_machine" "vm_k8s_master" {

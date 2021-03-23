@@ -415,12 +415,12 @@ resource "azurerm_lb_nat_rule" "lb_nat_k8s_worker" {
   frontend_ip_configuration_name = local.frontend_ip_configuration_name
 }
 
-# resource "azurerm_network_interface_nat_rule_association" "nic_k8s_worker_lb_nat_k8s_worker" {
-#   count                 = local.number_of_k8s_worker_nodes
-#   network_interface_id  = azurerm_network_interface.nic_k8s_worker[count.index].id
-#   ip_configuration_name = "internal-${count.index}"
-#   nat_rule_id           = azurerm_lb_nat_rule.lb_nat_k8s_worker[count.index].id
-# }
+resource "azurerm_network_interface_nat_rule_association" "nic_k8s_worker_lb_nat_k8s_worker" {
+  count                 = local.number_of_k8s_worker_nodes
+  network_interface_id  = azurerm_network_interface.nic_k8s_worker[count.index].id
+  ip_configuration_name = "internal-${count.index}"
+  nat_rule_id           = azurerm_lb_nat_rule.lb_nat_k8s_worker[count.index].id
+}
 
 
 

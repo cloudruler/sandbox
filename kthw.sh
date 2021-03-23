@@ -1,3 +1,5 @@
+#Install azure CLI curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
 #Certificate Authority
 {
 
@@ -94,7 +96,7 @@ EOF
 EXTERNAL_HOSTNAME='k8s.cloudruler.io'
 EXTERNAL_IP='52.152.96.240'
 
-INTERNAL_IP='10.1.1.4'
+INTERNAL_IP=$(az vm list-ip-addresses -g rg-sandbox -n vm-k8s-master-0 --query "[0].virtualMachine.network.privateIpAddresses[0]")
 
 cfssl gencert \
   -ca=ca.pem \
@@ -230,7 +232,7 @@ cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
-  -hostname=10.32.0.1,10.1.1.4,10.1.1.5,10.1.1.6,${KUBERNETES_PUBLIC_ADDRESS},127.0.0.1,${KUBERNETES_HOSTNAMES} \
+  -hostname=10.32.0.1,10.1.1.4,10.1.1.35,10.1.1.66,${KUBERNETES_PUBLIC_ADDRESS},127.0.0.1,${KUBERNETES_HOSTNAMES} \
   -profile=kubernetes \
   kubernetes-csr.json | cfssljson -bare kubernetes
 
@@ -432,7 +434,8 @@ for instance in 1 2 3; do
   sudo scp -i ~/.ssh/cloudruleradmin -P ${instance} -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no"  encryption-config.yaml cloudruleradmin@k8s.cloudruler.io:~/
 done
 
-#Execute on every node:
+##################START COMMANDS WHICH MUST BE EXECUTED ON EVERY MASTER NODE################
+
 #Download and Install the etcd Binaries
 wget -q --show-progress --https-only --timestamping "https://github.com/etcd-io/etcd/releases/download/v3.4.10/etcd-v3.4.10-linux-amd64.tar.gz"
 
@@ -452,6 +455,7 @@ wget -q --show-progress --https-only --timestamping "https://github.com/etcd-io/
 }
 
 #Use the Azure Instance Metadata Service to get the private IP
+sudo apt-get update
 sudo apt-get install -y jq
 INTERNAL_IP=$(curl --silent -H Metadata:True --noproxy "*" http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r '.["network"]["interface"][0]["ipv4"]["ipAddress"][0]["privateIpAddress"]')
 
@@ -504,13 +508,6 @@ EOF
 #systemctl status etcd.service
 #journalctl -xe
 
-etcd[25550]: rejected connection from "10.1.1.36:33234" (error "tls: \"10.1.1.36\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cluster\" \"kubernetes.svc.cluster.local\"] (lookup kubernetes.svc.cluster.local on 127.0.0.53:53: server misbehaving)", ServerName "", IPAdd
-etcd[25550]: rejected connection from "10.1.1.67:52068" (error "tls: \"10.1.1.67\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cluster\" \"kubernetes.svc.cluster.local\"] (lookup kubernetes.svc.cluster.local on 127.0.0.53:53: server misbehaving)", ServerName "", IPAdd
-etcd[25550]: rejected connection from "10.1.1.36:33242" (error "tls: \"10.1.1.36\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cluster\" \"kubernetes.svc.cluster.local\"] (lookup kubernetes.svc.cluster.local on 127.0.0.53:53: server misbehaving)", ServerName "", IPAdd
-etcd[25550]: rejected connection from "10.1.1.36:33244" (error "tls: \"10.1.1.36\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cluster\" \"kubernetes.svc.cluster.local\"] (lookup kubernetes.svc.cluster.local on 127.0.0.53:53: server misbehaving)", ServerName "", IPAdd
-etcd[25550]: rejected connection from "10.1.1.67:52078" (error "tls: \"10.1.1.67\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cluster\" \"kubernetes.svc.cluster.local\"] (lookup kubernetes.svc.cluster.local on 127.0.0.53:53: server misbehaving)", ServerName "", IPAdd
-etcd[25550]: rejected connection from "10.1.1.67:52076" (error "tls: \"10.1.1.67\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cluster\" \"kubernetes.svc.cluster.local\"] (lookup kubernetes.svc.cluster.local on 127.0.0.53:53: server misbehaving)", ServerName "", IPAdd
-etcd[25550]: rejected connection from "10.1.1.36:33250" (error "tls: \"10.1.1.36\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cluster\" \"kubernetes.svc.cluster.local\"] (lookup kubernetes.svc.cluster.local on 127.0.0.53:53: server misbehaving)", ServerName "", IPAdd
-etcd[25550]: rejected connection from "10.1.1.36:33252" (error "tls: \"10.1.1.36\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cluster\" \"kubernetes.svc.cluster.local\"] (lookup kubernetes.svc.cluster.local on 127.0.0.53:53: server misbehaving)", ServerName "", IPAdd
-etcd[25550]: rejected connection from "10.1.1.67:52084" (error "tls: \"10.1.1.67\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cluster\" \"kubernetes.svc.cluster.local\"] (lookup kubernetes.svc.cluster.local on 127.0.0.53:53: server misbehaving)", ServerName "", IPAdd
-etcd[25550]: rejected connection from "10.1.1.67:52086" (error "tls: \"10.1.1.67\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cluster\" \"kubernetes.svc.cluster.local\"] (lookup kubernetes.svc.cluster.local on 127.0.0.53:53: server misbehaving)", ServerName "", IPAdd
+
+
+

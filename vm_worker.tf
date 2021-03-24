@@ -65,10 +65,10 @@ resource "azurerm_lb_backend_address_pool" "lbe_bep_k8s_worker" {
   loadbalancer_id = azurerm_lb.lbe_k8s.id
 }
 
-resource "azurerm_lb_backend_address_pool_address" "lb_bep_k8s_addr" {
-  count                   = local.number_of_k8s_master_nodes
-  name                    = "lb-bep-k8s-addr-${count.index}"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id
+resource "azurerm_lb_backend_address_pool_address" "lb_bep_k8s_addr_worker" {
+  count                   = local.number_of_k8s_worker_nodes
+  name                    = "lb-bep-k8s-addr-worker-${count.index}"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id
   virtual_network_id      = azurerm_virtual_network.vnet_zone.id
   ip_address              = azurerm_network_interface.nic_k8s_worker[count.index].private_ip_address
 }
@@ -79,7 +79,7 @@ resource "azurerm_lb_nat_rule" "lb_nat_k8s_worker" {
   loadbalancer_id                = azurerm_lb.lbe_k8s.id
   name                           = "nat-ssh-worker-${count.index}"
   protocol                       = "Tcp"
-  frontend_port                  = local.number_of_k8s_master_nodes + count.index + 1
+  frontend_port                  = local.number_of_k8s_worker_nodes + count.index + 1
   backend_port                   = 22
   frontend_ip_configuration_name = local.frontend_ip_configuration_name
 }

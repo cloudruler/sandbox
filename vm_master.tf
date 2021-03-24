@@ -73,9 +73,9 @@ resource "azurerm_lb_backend_address_pool" "lbe_bep_k8s_master" {
   loadbalancer_id = azurerm_lb.lbe_k8s.id
 }
 
-resource "azurerm_lb_backend_address_pool_address" "lb_bep_k8s_addr" {
+resource "azurerm_lb_backend_address_pool_address" "lb_bep_k8s_addr_master" {
   count                   = local.number_of_k8s_master_nodes
-  name                    = "lb-bep-k8s-addr-${count.index}"
+  name                    = "lb-bep-k8s-addr-master-${count.index}"
   backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id
   virtual_network_id      = azurerm_virtual_network.vnet_zone.id
   ip_address              = azurerm_network_interface.nic_k8s_master[count.index].private_ip_address

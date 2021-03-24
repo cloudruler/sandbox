@@ -248,7 +248,7 @@ cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
-  -hostname="vm-k8s-master-0,vm-k8s-master-1,vm-k8s-master-2,10.32.0.1,$INTERNAL_IP_0,$INTERNAL_IP_1,$INTERNAL_IP_2,$KUBERNETES_PUBLIC_ADDRESS,127.0.0.1,$KUBERNETES_HOSTNAMES" \
+  -hostname="vm-k8s-master-0,vm-k8s-master-1,vm-k8s-master-2,k8s.cloudruler.io,10.32.0.1,$INTERNAL_IP_0,$INTERNAL_IP_1,$INTERNAL_IP_2,$KUBERNETES_PUBLIC_ADDRESS,127.0.0.1,$KUBERNETES_HOSTNAMES" \
   -profile=kubernetes \
   kubernetes-csr.json | cfssljson -bare kubernetes
 

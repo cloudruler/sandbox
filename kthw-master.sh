@@ -263,5 +263,5 @@ subjects:
 EOF
 
 
-
+#TODO the certificate needs to have k8s.cloudruler.io as a SAN. for the kube API
 

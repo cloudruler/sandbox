@@ -79,8 +79,8 @@ resource "azurerm_application_security_group" "asg_k8s_workers" {
   resource_group_name = azurerm_resource_group.rg.name
 }
 
-# resource "azurerm_network_interface_application_security_group_association" "asg_k8s_workers_nic_k8s_worker" {
-#   count                         = local.number_of_k8s_worker_nodes
-#   network_interface_id          = azurerm_network_interface.nic_k8s_worker[count.index].id
-#   application_security_group_id = azurerm_application_security_group.asg_k8s_workers.id
-# }
+resource "azurerm_network_interface_application_security_group_association" "asg_k8s_workers_nic_k8s_worker" {
+  count                         = local.number_of_k8s_worker_nodes
+  network_interface_id          = azurerm_network_interface.nic_k8s_worker[count.index].id
+  application_security_group_id = azurerm_application_security_group.asg_k8s_workers.id
+}

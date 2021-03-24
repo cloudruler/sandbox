@@ -62,6 +62,12 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   }
 }
 
+resource "azurerm_application_security_group" "asg_k8s_masters" {
+  name                = "asg-k8s-masters"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
 # resource "azurerm_network_interface_application_security_group_association" "asg_k8s_masters_nic_k8s_master" {
 #   count                         = local.number_of_k8s_master_nodes
 #   network_interface_id          = azurerm_network_interface.nic_k8s_master[count.index].id

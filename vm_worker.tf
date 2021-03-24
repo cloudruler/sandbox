@@ -13,16 +13,17 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
     primary                       = true
   }
 
-  dynamic "ip_configuration" {
-    for_each = range(local.worker_number_of_pods)
-    iterator = config_index
-    content {
-      name                          = "nic-k8s-worker-${count.index}-pod-${config_index.value}"
-      subnet_id                     = azurerm_subnet.snet_main.id
-      private_ip_address_allocation = "Static"
-      private_ip_address            = "10.1.1.${local.worker_ip_start + count.index * local.worker_number_of_ips + config_index.value + 1}"
-    }
-  }
+  #Disabling these because Kubernetes the Hard Way does not set things up this way
+  # dynamic "ip_configuration" {
+  #   for_each = range(local.worker_number_of_pods)
+  #   iterator = config_index
+  #   content {
+  #     name                          = "nic-k8s-worker-${count.index}-pod-${config_index.value}"
+  #     subnet_id                     = azurerm_subnet.snet_main.id
+  #     private_ip_address_allocation = "Static"
+  #     private_ip_address            = "10.1.1.${local.worker_ip_start + count.index * local.worker_number_of_ips + config_index.value + 1}"
+  #   }
+  # }
 }
 
 resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
@@ -58,6 +59,12 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
   identity {
     type = "SystemAssigned"
   }
+}
+
+resource "azurerm_application_security_group" "asg_k8s_workers" {
+  name                = "asg-k8s-workers"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
 }
 
 resource "azurerm_lb_backend_address_pool" "lbe_bep_k8s_worker" {

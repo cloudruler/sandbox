@@ -106,7 +106,7 @@ resource "azurerm_network_interface_nat_rule_association" "nic_k8s_master_lb_nat
   nat_rule_id           = azurerm_lb_nat_rule.lb_nat_k8s_master[count.index].id
 }
 
-resource "azurerm_lb_rule" "lbe_rule" {
+resource "azurerm_lb_rule" "lbe_k8s_api_rule" {
   resource_group_name            = azurerm_resource_group.rg.name
   loadbalancer_id                = azurerm_lb.lbe_k8s.id
   name                           = "lbe-k8s-api-rule"

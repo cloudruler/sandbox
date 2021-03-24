@@ -1,4 +1,5 @@
 #Install azure CLI curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+#az login
 
 #Certificate Authority
 {
@@ -96,7 +97,7 @@ EOF
 EXTERNAL_HOSTNAME='k8s.cloudruler.io'
 EXTERNAL_IP='52.152.96.240'
 
-INTERNAL_IP=$(az vm list-ip-addresses -g rg-sandbox -n vm-k8s-master-0 --query "[0].virtualMachine.network.privateIpAddresses[0]")
+INTERNAL_IP=$(az vm list-ip-addresses -g rg-sandbox -n ${instance} --query "[0].virtualMachine.network.privateIpAddresses[0]")
 
 cfssl gencert \
   -ca=ca.pem \
@@ -228,11 +229,26 @@ cat > kubernetes-csr.json <<EOF
 }
 EOF
 
+INTERNAL_IP_0=$(az vm list-ip-addresses -g rg-sandbox -n vm-k8s-master-0 --query "[0].virtualMachine.network.privateIpAddresses[0]" | sed 's/"//g')
+INTERNAL_IP_1=$(az vm list-ip-addresses -g rg-sandbox -n vm-k8s-master-1 --query "[0].virtualMachine.network.privateIpAddresses[0]" | sed 's/"//g')
+INTERNAL_IP_2=$(az vm list-ip-addresses -g rg-sandbox -n vm-k8s-master-2 --query "[0].virtualMachine.network.privateIpAddresses[0]" | sed 's/"//g')
+
+echo "INTERNAL_IP_0: $INTERNAL_IP_0"
+echo "INTERNAL_IP_1: $INTERNAL_IP_1"
+echo "INTERNAL_IP_2: $INTERNAL_IP_2"
+
+HOSTNAMESLIST="vm-k8s-master-0,vm-k8s-master-1,vm-k8s-master-2,10.32.0.1,$INTERNAL_IP_0,$INTERNAL_IP_1,$INTERNAL_IP_2,$KUBERNETES_PUBLIC_ADDRESS,127.0.0.1,$KUBERNETES_HOSTNAMES"
+echo "Host names: $HOSTNAMESLIST"
+
+
+
+#HOSTNAMESLISTTWO=vm-k8s-master-0,vm-k8s-master-1,vm-k8s-master-2,10.32.0.1,$INTERNAL_IP_0,$INTERNAL_IP_1,$INTERNAL_IP_2,$KUBERNETES_PUBLIC_ADDRESS,127.0.0.1,$KUBERNETES_HOSTNAMES
+
 cfssl gencert \
   -ca=ca.pem \
   -ca-key=ca-key.pem \
   -config=ca-config.json \
-  -hostname=10.32.0.1,10.1.1.4,10.1.1.35,10.1.1.66,${KUBERNETES_PUBLIC_ADDRESS},127.0.0.1,${KUBERNETES_HOSTNAMES} \
+  -hostname="vm-k8s-master-0,vm-k8s-master-1,vm-k8s-master-2,10.32.0.1,$INTERNAL_IP_0,$INTERNAL_IP_1,$INTERNAL_IP_2,$KUBERNETES_PUBLIC_ADDRESS,127.0.0.1,$KUBERNETES_HOSTNAMES" \
   -profile=kubernetes \
   kubernetes-csr.json | cfssljson -bare kubernetes
 
@@ -434,74 +450,13 @@ for instance in 1 2 3; do
   sudo scp -i ~/.ssh/cloudruleradmin -P ${instance} -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no"  encryption-config.yaml cloudruleradmin@k8s.cloudruler.io:~/
 done
 
-##################START COMMANDS WHICH MUST BE EXECUTED ON EVERY MASTER NODE################
+##########RUN BOOTSTRAPPING OF ETCD
 
-#Download and Install the etcd Binaries
-wget -q --show-progress --https-only --timestamping "https://github.com/etcd-io/etcd/releases/download/v3.4.10/etcd-v3.4.10-linux-amd64.tar.gz"
-
-{
-  tar -xvf etcd-v3.4.10-linux-amd64.tar.gz
-  sudo mv etcd-v3.4.10-linux-amd64/etcd* /usr/local/bin/
-}
-
-#ssh -i ~/.ssh/cloudruleradmin -p 1 -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" cloudruleradmin@k8s.cloudruler.io command
-
-
-#Configure etcd server
-{
-  sudo mkdir -p /etc/etcd /var/lib/etcd
-  sudo chmod 700 /var/lib/etcd
-  sudo cp ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
-}
-
-#Use the Azure Instance Metadata Service to get the private IP
-sudo apt-get update
-sudo apt-get install -y jq
-INTERNAL_IP=$(curl --silent -H Metadata:True --noproxy "*" http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r '.["network"]["interface"][0]["ipv4"]["ipAddress"][0]["privateIpAddress"]')
-
-ETCD_NAME=$(hostname -s)
-
-#Create the etcd.service systemd unit file:
-cat <<EOF | sudo tee /etc/systemd/system/etcd.service
-[Unit]
-Description=etcd
-Documentation=https://github.com/coreos
-
-[Service]
-Type=notify
-ExecStart=/usr/local/bin/etcd \\
-  --name ${ETCD_NAME} \\
-  --cert-file=/etc/etcd/kubernetes.pem \\
-  --key-file=/etc/etcd/kubernetes-key.pem \\
-  --peer-cert-file=/etc/etcd/kubernetes.pem \\
-  --peer-key-file=/etc/etcd/kubernetes-key.pem \\
-  --trusted-ca-file=/etc/etcd/ca.pem \\
-  --peer-trusted-ca-file=/etc/etcd/ca.pem \\
-  --peer-client-cert-auth \\
-  --client-cert-auth \\
-  --initial-advertise-peer-urls https://${INTERNAL_IP}:2380 \\
-  --listen-peer-urls https://${INTERNAL_IP}:2380 \\
-  --listen-client-urls https://${INTERNAL_IP}:2379,https://127.0.0.1:2379 \\
-  --advertise-client-urls https://${INTERNAL_IP}:2379 \\
-  --initial-cluster-token etcd-cluster-0 \\
-  --initial-cluster vm-k8s-master-0=https://10.1.1.4:2380,vm-k8s-master-1=https://10.1.1.35:2380,vm-k8s-master-2=https://10.1.1.66:2380 \\
-  --initial-cluster-state new \\
-  --data-dir=/var/lib/etcd
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-
-{
-  sudo systemctl daemon-reload
-  sudo systemctl enable etcd
-  sudo systemctl start etcd
-}
-
-##################END COMMANDS WHICH MUST BE EXECUTED ON EVERY MASTER NODE################
+sudo ETCDCTL_API=3 etcdctl member list \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/etcd/ca.pem \
+  --cert=/etc/etcd/kubernetes.pem \
+  --key=/etc/etcd/kubernetes-key.pem
 
 
 #See "systemctl status etcd.service" and "journalctl -xe" for details.

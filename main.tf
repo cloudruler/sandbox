@@ -238,7 +238,6 @@ resource "azurerm_network_interface" "nic_k8s_master" {
   name                = "nic-k8s-master-${count.index}"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
-
   ip_configuration {
     name                          = "internal-${count.index}"
     subnet_id                     = azurerm_subnet.snet_main.id
@@ -324,7 +323,7 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
   name                = "nic-k8s-worker-${count.index}"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
-
+  enable_ip_forwarding = true
   ip_configuration {
     name                          = "internal-${count.index}"
     subnet_id                     = azurerm_subnet.snet_main.id

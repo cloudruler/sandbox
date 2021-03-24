@@ -1,5 +1,5 @@
 resource "azurerm_public_ip" "pip_k8s_worker" {
-  count                = local.number_of_k8s_worker_nodes
+  count               = local.number_of_k8s_worker_nodes
   name                = "pip-k8s-worker-${count.index}"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -17,7 +17,7 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
   ip_configuration {
     name                          = "internal-${count.index}"
     subnet_id                     = azurerm_subnet.snet_main.id
-    public_ip_address_id = azurerm_public_ip.pip_k8s_worker.id
+    public_ip_address_id          = azurerm_public_ip.pip_k8s_worker[count.index].id
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.1.1.${local.worker_ip_start + count.index * local.worker_number_of_ips}"
     primary                       = true

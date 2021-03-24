@@ -103,8 +103,8 @@ resource "azurerm_lb_rule" "lbe_worker_rule" {
   loadbalancer_id                = azurerm_lb.lbe_k8s.id
   name                           = "lbe-worker-rule"
   protocol                       = "Tcp"
-  frontend_port                  = 6443
-  backend_port                   = 6443
+  frontend_port                  = 6444
+  backend_port                   = 6444
   frontend_ip_configuration_name = local.frontend_ip_configuration_name
   backend_address_pool_id        = azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id
   probe_id                       = azurerm_lb_probe.lbe_prb_k8s.id

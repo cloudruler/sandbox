@@ -128,7 +128,7 @@ resource "azurerm_lb_rule" "lbe_k8s_api_rule" {
   frontend_ip_configuration_name = local.frontend_ip_configuration_name
   backend_address_pool_id        = azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id
   probe_id                       = azurerm_lb_probe.lbe_prb_k8s.id
-  disable_outbound_snat          = false
+  disable_outbound_snat          = true
 }
 
 # resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {

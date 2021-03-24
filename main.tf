@@ -210,19 +210,21 @@ resource "azurerm_lb_backend_address_pool" "lbe_bep_k8s" {
 }
 
 resource "azurerm_lb_probe" "lbe_prb_k8s" {
-  name                = "lbe-prb-k8s-ssh"
+  name                = "lbe-prb-k8s-api"
   resource_group_name = azurerm_resource_group.rg.name
   loadbalancer_id     = azurerm_lb.lbe_k8s.id
-  port                = 22
+  protocol            = "Https"
+  port                = 6443
+  request_path        = "/healthz"
 }
 
 resource "azurerm_lb_rule" "lbe_rule" {
   resource_group_name            = azurerm_resource_group.rg.name
   loadbalancer_id                = azurerm_lb.lbe_k8s.id
-  name                           = "lbe-k8s-rule"
+  name                           = "lbe-k8s-api-rule"
   protocol                       = "Tcp"
-  frontend_port                  = 22
-  backend_port                   = 22
+  frontend_port                  = 6443
+  backend_port                   = 6443
   frontend_ip_configuration_name = local.frontend_ip_configuration_name
   backend_address_pool_id        = azurerm_lb_backend_address_pool.lbe_bep_k8s.id
   probe_id                       = azurerm_lb_probe.lbe_prb_k8s.id
@@ -319,10 +321,10 @@ resource "azurerm_lb_backend_address_pool_address" "lb_bep_k8s_addr" {
 
 
 resource "azurerm_network_interface" "nic_k8s_worker" {
-  count               = local.number_of_k8s_worker_nodes
-  name                = "nic-k8s-worker-${count.index}"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  count                = local.number_of_k8s_worker_nodes
+  name                 = "nic-k8s-worker-${count.index}"
+  location             = var.location
+  resource_group_name  = azurerm_resource_group.rg.name
   enable_ip_forwarding = true
   ip_configuration {
     name                          = "internal-${count.index}"
@@ -336,8 +338,8 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
     for_each = range(local.worker_number_of_pods)
     iterator = config_index
     content {
-      name      = "nic-k8s-worker-${count.index}-pod-${config_index.value}"
-      subnet_id = azurerm_subnet.snet_main.id
+      name                          = "nic-k8s-worker-${count.index}-pod-${config_index.value}"
+      subnet_id                     = azurerm_subnet.snet_main.id
       private_ip_address_allocation = "Static"
       private_ip_address            = "10.1.1.${local.worker_ip_start + count.index * local.worker_number_of_ips + config_index.value + 1}"
     }

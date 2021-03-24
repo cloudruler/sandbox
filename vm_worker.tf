@@ -98,17 +98,18 @@ resource "azurerm_network_interface_nat_rule_association" "nic_k8s_worker_lb_nat
   nat_rule_id           = azurerm_lb_nat_rule.lb_nat_k8s_worker[count.index].id
 }
 
-resource "azurerm_lb_rule" "lbe_worker_rule" {
-  resource_group_name            = azurerm_resource_group.rg.name
-  loadbalancer_id                = azurerm_lb.lbe_k8s.id
-  name                           = "lbe-worker-rule"
-  protocol                       = "Tcp"
-  frontend_port                  = 6444
-  backend_port                   = 6444
-  frontend_ip_configuration_name = local.frontend_ip_configuration_name
-  backend_address_pool_id        = azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id
-  probe_id                       = azurerm_lb_probe.lbe_prb_k8s.id
+resource "azurerm_lb_outbound_rule" "lbe_out_rule_k8s_worker" {
+  resource_group_name     = azurerm_resource_group.rg.name
+  loadbalancer_id         = azurerm_lb.lbe_k8s.id
+  name                    = "lbe-worker-rule"
+  protocol                = "Tcp"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id
+
+  frontend_ip_configuration {
+    name = local.frontend_ip_configuration_name
+  }
 }
+
 # resource "azurerm_network_interface_application_security_group_association" "asg_k8s_workers_nic_k8s_worker" {
 #   count                         = local.number_of_k8s_worker_nodes
 #   network_interface_id          = azurerm_network_interface.nic_k8s_worker[count.index].id

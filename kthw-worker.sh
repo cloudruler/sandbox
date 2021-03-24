@@ -1,8 +1,10 @@
 #Install the OS dependencies:
 {
   sudo apt-get update
-  sudo apt-get -y install socat conntrack ipset
+  sudo apt-get -y install socat conntrack ipset jq
 }
+
+INTERNAL_IP=$(curl --silent -H Metadata:True --noproxy "*" http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r '.["network"]["interface"][0]["ipv4"]["ipAddress"][0]["privateIpAddress"]')
 
 #Disable swap
 sudo swapoff -a
@@ -18,19 +20,17 @@ wget -q --show-progress --https-only --timestamping \
   https://storage.googleapis.com/kubernetes-release/release/v1.18.6/bin/linux/amd64/kube-proxy \
   https://storage.googleapis.com/kubernetes-release/release/v1.18.6/bin/linux/amd64/kubelet
 
+#Create the installation directories:
+sudo mkdir -p \
+/etc/cni/net.d \
+/opt/cni/bin \
+/var/lib/kubelet \
+/var/lib/kube-proxy \
+/var/lib/kubernetes \
+/var/run/kubernetes
 
-
-  #Create the installation directories:
-  sudo mkdir -p \
-  /etc/cni/net.d \
-  /opt/cni/bin \
-  /var/lib/kubelet \
-  /var/lib/kube-proxy \
-  /var/lib/kubernetes \
-  /var/run/kubernetes
-
-  #Install the worker binaries:
-  {
+#Install the worker binaries:
+{
   mkdir containerd
   tar -xvf crictl-v1.18.0-linux-amd64.tar.gz
   tar -xvf containerd-1.3.6-linux-amd64.tar.gz -C containerd

@@ -53,7 +53,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   source_image_reference {
     publisher = "Canonical"
     offer     = "UbuntuServer"
-    sku       = "18.04-LTS"
+    sku       = "18.04-LTS" #Eventually upgrade to 19.04 or 19_20-daily-gen2
     version   = "latest"
   }
 

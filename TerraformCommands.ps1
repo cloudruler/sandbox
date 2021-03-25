@@ -1,0 +1,1 @@
+ForEach-Object { terraform taint "azurerm_linux_virtual_machine.vm_k8s_master[$_]"; terraform taint "azurerm_linux_virtual_machine.vm_k8s_worker[$_]"; }

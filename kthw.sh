@@ -461,6 +461,8 @@ sudo ETCDCTL_API=3 etcdctl member list \
 
 ##############RUN BOOTSTRAPPING OF CONTROL PLANE
 
+#Verify control plane is bootstrapped (run this from a master)
+kubectl get componentstatuses --kubeconfig admin.kubeconfig
 
 ###########RUN BOOTSTRAPPING OF WORKER NODES
 
@@ -493,6 +495,11 @@ kubectl get componentstatuses
 #List the nodes in the remote Kubernetes cluster:
 kubectl get nodes
 
+#Deploy the coredns cluster add-on:
+kubectl apply -f ./coredns-1.7.0.yaml
+
+#List the pods created by the kube-dns deployment:
+kubectl get pods -l k8s-app=kube-dns -n kube-system
 
 #See "systemctl status etcd.service" and "journalctl -xe" for details.
 #systemctl status etcd.service
@@ -500,4 +507,9 @@ kubectl get nodes
 
 
 
-
+sudo ETCDCTL_API=3 etcdctl get \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/etcd/ca.pem \
+  --cert=/etc/etcd/kubernetes.pem \
+  --key=/etc/etcd/kubernetes-key.pem\
+  /registry/secrets/default/kubernetes-the-hard-way | hexdump -C

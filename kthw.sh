@@ -206,7 +206,7 @@ cfssl gencert \
 #The Kubernetes API Server Certificate
 {
 
-KUBERNETES_PUBLIC_ADDRESS='52.152.96.240'
+KUBERNETES_PUBLIC_ADDRESS=$(az network public-ip show -g rg-connectivity -n pip-k8s --query "ipAddress" | sed 's/"//g')
 
 KUBERNETES_HOSTNAMES=kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local
 
@@ -450,13 +450,48 @@ for instance in 1 2 3; do
   sudo scp -i ~/.ssh/cloudruleradmin -P ${instance} -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no"  encryption-config.yaml cloudruleradmin@k8s.cloudruler.io:~/
 done
 
-##########RUN BOOTSTRAPPING OF ETCD
+##########RUN BOOTSTRAPPING OF ETCD ON THE WORKERS
 
+#Verify etcd
 sudo ETCDCTL_API=3 etcdctl member list \
   --endpoints=https://127.0.0.1:2379 \
   --cacert=/etc/etcd/ca.pem \
   --cert=/etc/etcd/kubernetes.pem \
   --key=/etc/etcd/kubernetes-key.pem
+
+##############RUN BOOTSTRAPPING OF CONTROL PLANE
+
+
+###########RUN BOOTSTRAPPING OF WORKER NODES
+
+#Verify workers are bootstapped (run this from a master)
+kubectl get nodes --kubeconfig admin.kubeconfig
+
+##Configuring kubectl for Remote Access
+#Generate a kubeconfig file suitable for authenticating as the admin user:
+{
+
+  kubectl config set-cluster kubernetes-the-hard-way \
+    --certificate-authority=ca.pem \
+    --embed-certs=true \
+    --server=https://${KUBERNETES_PUBLIC_ADDRESS}:6443
+
+  kubectl config set-credentials admin \
+    --client-certificate=admin.pem \
+    --client-key=admin-key.pem
+
+  kubectl config set-context kubernetes-the-hard-way \
+    --cluster=kubernetes-the-hard-way \
+    --user=admin
+
+  kubectl config use-context kubernetes-the-hard-way
+}
+
+#Check the health of the remote Kubernetes cluster:
+kubectl get componentstatuses
+
+#List the nodes in the remote Kubernetes cluster:
+kubectl get nodes
 
 
 #See "systemctl status etcd.service" and "journalctl -xe" for details.

@@ -23,7 +23,7 @@ wget -q --show-progress --https-only --timestamping "https://github.com/etcd-io/
 sudo apt-get update
 sudo apt-get install -y jq
 
-INTERNAL_IP=$(curl --silent -H Metadata:True --noproxy "*" http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r '.["network"]["interface"][0]["ipv4"]["ipAddress"][0]["privateIpAddress"]')
+INTERNAL_IP=$(curl --silent -H Metadata:True --noproxy "*" http://169.254.169.254/metadata/instance?api-version=2020-09-01 | jq -r '.network.interface[0].ipv4.ipAddress[0].privateIpAddress')
 
 ETCD_NAME=$(hostname -s)
 

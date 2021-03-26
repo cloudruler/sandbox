@@ -41,10 +41,10 @@ module "kubeadm" {
   resource_group_name              = azurerm_resource_group.rg.name
   location                         = var.location
   admin_username                   = "cloudruleradmin"
-  connectivity_resource_group_name = "rg-connectivity"
-  identity_resource_group_name     = "rg-identity"
-  ssh_public_key                   = "ssh-cloudruler"
-  cluster_public_ip                = "pip-k8s"
+  connectivity_resource_group_name = var.connectivity_resource_group_name
+  identity_resource_group_name     = var.identity_resource_group_name
+  ssh_public_key                   = var.ssh_public_key
+  cluster_public_ip                = var.cluster_public_ip
   master_nodes_config              = var.master_nodes_config
   worker_nodes_config              = var.worker_nodes_config
   vnet_cidr                        = var.vnet_cidr

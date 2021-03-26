@@ -1,25 +1,25 @@
 resource "azurerm_virtual_network" "vnet_zone" {
-  name                = "vnet-${local.landing_zone_name}"
-  address_space       = ["10.1.0.0/16"]
+  name                = "vnet-${var.landing_zone_name}"
+  address_space       = [var.vnet_cidr]
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
 }
 
 resource "azurerm_subnet" "snet_main" {
-  name                 = "snet-${local.landing_zone_name}"
-  resource_group_name  = azurerm_resource_group.rg.name
+  name                 = "snet-${var.landing_zone_name}"
+  resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.vnet_zone.name
-  address_prefixes     = ["10.1.1.0/24"]
+  address_prefixes     = [var.subnet_cidr]
 }
 
 resource "azurerm_network_security_group" "nsg_main" {
-  name                = "nsg-main"
+  name                = "nsg-${var.landing_zone_name}"
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
 
   #Allow SSH inbound
   security_rule {
-    name                       = "nsg-allow-ssh-snet-${local.landing_zone_name}"
+    name                       = "nsg-allow-ssh"
     description                = "Allow Inbound SSH"
     priority                   = 1001
     direction                  = "Inbound"
@@ -33,7 +33,7 @@ resource "azurerm_network_security_group" "nsg_main" {
 
   #Allow ICMP inbound
   security_rule {
-    name                       = "nsg-allow-icmp-snet-${local.landing_zone_name}"
+    name                       = "nsg-allow-icmp"
     description                = "Allow Inbound ICMP"
     priority                   = 1002
     direction                  = "Inbound"
@@ -118,36 +118,28 @@ resource "azurerm_subnet_network_security_group_association" "nsg_snet_main" {
   network_security_group_id = azurerm_network_security_group.nsg_main.id
 }
 
-#10.1.1.0/24
-#10.1.1.4 to 10.1.1.254
-#Master node 1: 10.1.1.4 to 10.1.1.34
-#Master node 2: 10.1.1.35 to 10.1.1.65
-#Master node 3: 10.1.1.66 to 10.1.1.96
-#Worker node 1: 10.1.1.97 to 10.1.1.127
-#Worker node 2: 10.1.1.128 to 10.1.1.158
-#Worker node 3: 10.1.1.159 to 10.1.1.189
 data "azurerm_public_ip" "pip_k8s" {
-  name                = "pip-k8s"
+  name                = var.cluster_public_ip
   resource_group_name = var.connectivity_resource_group_name
 }
 
 data "azurerm_ssh_public_key" "ssh_public_key" {
-  resource_group_name = "rg-identity"
-  name                = "ssh-cloudruler"
+  resource_group_name = var.identity_resource_group_name
+  name                = var.ssh_public_key
 }
 
 resource "azurerm_route_table" "route_k8s_pod" {
   name                          = "route-k8s-pod"
-  location                      = azurerm_resource_group.rg.location
-  resource_group_name           = azurerm_resource_group.rg.name
+  location                      = var.location
+  resource_group_name           = var.resource_group_name
   disable_bgp_route_propagation = true
 
   dynamic "route" {
-    for_each = range(local.number_of_k8s_worker_nodes)
+    for_each = range(length(var.worker_nodes_config))
     iterator = worker_node_index
     content {
       name                   = "udr-k8s-pod-${worker_node_index.value}"
-      address_prefix         = "10.200.${worker_node_index.value}.0/24"
+      address_prefix         = var.worker_nodes_config[worker_node_index.value].pod_cidr
       next_hop_type          = "VirtualAppliance"
       next_hop_in_ip_address = azurerm_linux_virtual_machine.vm_k8s_worker[worker_node_index.value].private_ip_address
     }

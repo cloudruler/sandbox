@@ -18,6 +18,22 @@ resource "azurerm_resource_group" "rg" {
   location = var.location
 }
 
+# module "kthw" {
+#   source                           = "./modules/kthw"
+#   landing_zone_name                = local.landing_zone_name
+#   resource_group_name              = azurerm_resource_group.rg.name
+#   location                         = var.location
+#   admin_username                   = "cloudruleradmin"
+#   connectivity_resource_group_name = "rg-connectivity"
+#   identity_resource_group_name     = "rg-identity"
+#   ssh_public_key                   = "ssh-cloudruler"
+#   cluster_public_ip                = "pip-k8s"
+#   master_nodes_config              = var.master_nodes_config
+#   worker_nodes_config              = var.worker_nodes_config
+#   vnet_cidr                        = var.vnet_cidr
+#   subnet_cidr                      = var.subnet_cidr
+# }
+
 module "kubeadm" {
   source                           = "./modules/kubeadm"
   landing_zone_name                = local.landing_zone_name

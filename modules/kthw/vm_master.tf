@@ -1,14 +1,14 @@
 
 resource "azurerm_network_interface" "nic_k8s_master" {
-  count               = local.number_of_k8s_master_nodes
+  count               = length(var.master_nodes_config)
   name                = "nic-k8s-master-${count.index}"
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
   ip_configuration {
     name                          = "internal-${count.index}"
     subnet_id                     = azurerm_subnet.snet_main.id
     private_ip_address_allocation = "Static"
-    private_ip_address            = "10.1.1.${local.master_ip_start + count.index * local.master_number_of_ips}"
+    private_ip_address            = var.master_nodes_config[count.index].private_ip_address
     primary                       = true
   }
 
@@ -28,19 +28,19 @@ resource "azurerm_network_interface" "nic_k8s_master" {
 }
 
 resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
-  count               = local.number_of_k8s_master_nodes
+  count               = length(var.master_nodes_config)
   name                = "vm-k8s-master-${count.index}"
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
   location            = var.location
   size                = "Standard_B2s"
-  #custom_data                 = filebase64("./user-data-master-azure.yml")
-  admin_username = local.admin_username
+  custom_data         = var.custom_data
+  admin_username      = var.admin_username
   network_interface_ids = [
     azurerm_network_interface.nic_k8s_master[count.index].id,
   ]
 
   admin_ssh_key {
-    username   = local.admin_username
+    username   = var.admin_username
     public_key = data.azurerm_ssh_public_key.ssh_public_key.public_key
   }
 
@@ -65,11 +65,11 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
 resource "azurerm_application_security_group" "asg_k8s_masters" {
   name                = "asg-k8s-masters"
   location            = var.location
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name = var.resource_group_name
 }
 
 resource "azurerm_network_interface_application_security_group_association" "asg_k8s_masters_nic_k8s_master" {
-  count                         = local.number_of_k8s_master_nodes
+  count                         = length(var.master_nodes_config)
   network_interface_id          = azurerm_network_interface.nic_k8s_master[count.index].id
   application_security_group_id = azurerm_application_security_group.asg_k8s_masters.id
 }
@@ -80,7 +80,7 @@ resource "azurerm_lb_backend_address_pool" "lbe_bep_k8s_master" {
 }
 
 resource "azurerm_lb_backend_address_pool_address" "lb_bep_k8s_addr_master" {
-  count                   = local.number_of_k8s_master_nodes
+  count                   = length(var.master_nodes_config)
   name                    = "lb-bep-k8s-addr-master-${count.index}"
   backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id
   virtual_network_id      = azurerm_virtual_network.vnet_zone.id
@@ -89,43 +89,43 @@ resource "azurerm_lb_backend_address_pool_address" "lb_bep_k8s_addr_master" {
 
 
 resource "azurerm_lb_nat_rule" "lb_nat_k8s_master" {
-  count                          = local.number_of_k8s_master_nodes
-  resource_group_name            = azurerm_resource_group.rg.name
+  count                          = length(var.master_nodes_config)
+  resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.lbe_k8s.id
   name                           = "nat-ssh-master-${count.index}"
   protocol                       = "Tcp"
   frontend_port                  = count.index + 1
   backend_port                   = 22
-  frontend_ip_configuration_name = local.frontend_ip_configuration_name
+  frontend_ip_configuration_name = azurerm_lb.lbe_k8s.frontend_ip_configuration[0].name
 }
 
 resource "azurerm_network_interface_nat_rule_association" "nic_k8s_master_lb_nat_k8s_master" {
-  count                 = local.number_of_k8s_master_nodes
+  count                 = length(var.master_nodes_config)
   network_interface_id  = azurerm_network_interface.nic_k8s_master[count.index].id
   ip_configuration_name = "internal-${count.index}"
   nat_rule_id           = azurerm_lb_nat_rule.lb_nat_k8s_master[count.index].id
 }
 
 resource "azurerm_lb_outbound_rule" "lbe_out_rule_k8s_master" {
-  resource_group_name     = azurerm_resource_group.rg.name
+  resource_group_name     = var.resource_group_name
   loadbalancer_id         = azurerm_lb.lbe_k8s.id
   name                    = "lbe-master-rule"
   protocol                = "Tcp"
   backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id
 
   frontend_ip_configuration {
-    name = local.frontend_ip_configuration_name
+    name = azurerm_lb.lbe_k8s.frontend_ip_configuration[0].name
   }
 }
 
 resource "azurerm_lb_rule" "lbe_k8s_api_rule" {
-  resource_group_name            = azurerm_resource_group.rg.name
+  resource_group_name            = var.resource_group_name
   loadbalancer_id                = azurerm_lb.lbe_k8s.id
   name                           = "lbe-k8s-api-rule"
   protocol                       = "Tcp"
   frontend_port                  = 6443
   backend_port                   = 6443
-  frontend_ip_configuration_name = local.frontend_ip_configuration_name
+  frontend_ip_configuration_name = azurerm_lb.lbe_k8s.frontend_ip_configuration[0].name
   backend_address_pool_id        = azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id
   probe_id                       = azurerm_lb_probe.lbe_prb_k8s.id
   disable_outbound_snat          = true
@@ -133,11 +133,11 @@ resource "azurerm_lb_rule" "lbe_k8s_api_rule" {
 
 # resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {
 #   name                        = "vmss-k8s-master"
-#   resource_group_name         = azurerm_resource_group.rg.name
+#   resource_group_name         = var.resource_group_name
 #   location                    = var.location
 #   sku                         = "Standard_B2s"
 #   instances                   = var.k8s_master_node_count
-#   admin_username              = local.admin_username
+#   admin_username              = var.admin_username
 #   computer_name_prefix        = "vm-k8s-master"
 #   custom_data                 = filebase64("./user-data-master-azure.yml")
 #   upgrade_mode                = "Automatic"
@@ -167,7 +167,7 @@ resource "azurerm_lb_rule" "lbe_k8s_api_rule" {
 #   }
 
 #   admin_ssh_key {
-#     username   = local.admin_username
+#     username   = var.admin_username
 #     public_key = data.azurerm_ssh_public_key.ssh_public_key.public_key
 #   }
 

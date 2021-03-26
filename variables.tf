@@ -34,3 +34,11 @@ variable "vnet_cidr" {
 variable "subnet_cidr" {
   type = string
 }
+
+variable "ssh_public_key" {
+  type = string
+}
+
+variable "cluster_public_ip" {
+  type = string
+}

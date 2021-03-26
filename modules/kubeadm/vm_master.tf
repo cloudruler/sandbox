@@ -33,7 +33,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = "Standard_B2s"
-  custom_data         = var.custom_data
+  #custom_data         = var.custom_data
   admin_username      = var.admin_username
   network_interface_ids = [
     azurerm_network_interface.nic_k8s_master[count.index].id,

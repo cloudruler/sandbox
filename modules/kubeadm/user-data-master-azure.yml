@@ -283,14 +283,14 @@ runcmd:
 - [ apt-mark, hold, kubelet, kubeadm, kubectl ]
 #Install Azure CNI plugin
 - [ /tmp/install-cni-plugin.sh, v1.2.7, v0.9.1 ]
-#Set up rules to Source NAT anything not destined for the landing zone vnet 10.1.0.0/15
-- [ sh, -c, 'iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d 10.1.0.0/15 -j MASQUERADE' ]
+#Set up rules to Source NAT anything not destined for the landing zone vnet 10.1.0.0/16
+- [ sh, -c, 'iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d 10.1.0.0/16 -j MASQUERADE' ]
 #Install containerd as the container runtime
 - [ mkdir, -p, /etc/containerd ]
 - [ systemctl, restart, containerd ]
 #- [ kubeadm, init, '--cri-socket unix:///run/containerd/containerd.sock', '--config /tmp/kubeadm-config.yml' ]
 #kubeadm config images pull --cri-socket unix:///run/containerd/containerd.sock
-#kubeadm init --control-plane-endpoint=k8s.cloudruler.io --cri-socket unix:///run/containerd/containerd.sock --config /tmp/kubeadm-config.yml --v=10 --pod-network-cidr 10.1.0.0/
+#kubeadm init --control-plane-endpoint=k8s.cloudruler.io --cri-socket unix:///run/containerd/containerd.sock --config /tmp/kubeadm-config.yml --v=10 --pod-network-cidr 10.2.3.0/24
 #kubeadm init --cri-socket unix:///run/containerd/containerd.sock --config /tmp/kubeadm-config.yml
 
 #sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock logs CONTAINERID

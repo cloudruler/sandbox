@@ -32,7 +32,7 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
       #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_workers.id]
       #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id]
       private_ip_address_allocation = "Static"
-      private_ip_address            = cidrhost(var.worker_nodes_config[count.index].cidr, config_index.value)
+      private_ip_address            = cidrhost(var.worker_nodes_config[count.index].pod_cidr, config_index.value)
     }
   }
 }

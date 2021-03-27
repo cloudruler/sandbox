@@ -1,3 +1,12 @@
+resource "azurerm_public_ip" "pip_k8s_master" {
+  count               = length(var.master_nodes_config)
+  name                = "pip-k8s-master-${count.index}"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  sku                 = "Basic"
+  allocation_method   = "Dynamic"
+  domain_name_label   = "cloudruler-k8s-master-${count.index}"
+}
 
 resource "azurerm_network_interface" "nic_k8s_master" {
   count               = length(var.master_nodes_config)
@@ -7,6 +16,7 @@ resource "azurerm_network_interface" "nic_k8s_master" {
   ip_configuration {
     name                          = "internal-${count.index}"
     subnet_id                     = azurerm_subnet.snet_main.id
+    public_ip_address_id          = azurerm_public_ip.pip_k8s_worker[count.index].id
     private_ip_address_allocation = "Static"
     private_ip_address            = var.master_nodes_config[count.index].private_ip_address
     primary                       = true

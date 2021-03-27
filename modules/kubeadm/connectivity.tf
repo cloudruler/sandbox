@@ -129,7 +129,7 @@ data "azurerm_ssh_public_key" "ssh_public_key" {
 }
 
 resource "azurerm_route_table" "route_k8s_pod" {
-  name                          = "route-k8s-pod"
+  name                          = local.route_table_name
   location                      = var.location
   resource_group_name           = var.resource_group_name
   disable_bgp_route_propagation = true

@@ -54,7 +54,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
     subnet_name         = azurerm_subnet.snet_main.name
     nsg_name            = azurerm_network_security_group.nsg_main.name
     vnet_name           = azurerm_virtual_network.vnet_zone.name
-    vnet_resource_group = var.resource_group_name
+    vnet_resource_group_name = var.resource_group_name
     route_table_name    = local.route_table_name
   }))
   admin_username = var.admin_username

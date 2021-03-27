@@ -37,7 +37,8 @@ resource "azurerm_resource_group" "rg" {
 module "kubeadm" {
   source                           = "./modules/kubeadm"
   landing_zone_name                = local.landing_zone_name
-  custom_data                      = filebase64("./modules/kubeadm/user-data-master-azure.yml")
+  master_custom_data_template      = "./modules/kubeadm/user-data-master-azure.yml"
+  worker_custom_data_template      = "./modules/kubeadm/user-data-worker-azure.yml"
   resource_group_name              = azurerm_resource_group.rg.name
   location                         = var.location
   admin_username                   = "cloudruleradmin"

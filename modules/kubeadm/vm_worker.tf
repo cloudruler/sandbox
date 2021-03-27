@@ -23,17 +23,18 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
     primary                       = true
   }
 
-  #Disabling these because Kubernetes the Hard Way does not set things up this way
-  # dynamic "ip_configuration" {
-  #   for_each = range(var.worker_nodes_config[count.index].number_of_pods)
-  #   iterator = config_index
-  #   content {
-  #     name                          = "nic-k8s-worker-${count.index}-pod-${config_index.value}"
-  #     subnet_id                     = azurerm_subnet.snet_main.id
-  #     private_ip_address_allocation = "Static"
-  #     private_ip_address            = "10.1.1.${local.worker_ip_start + count.index * local.worker_number_of_ips + config_index.value + 1}"
-  #   }
-  # }
+  dynamic "ip_configuration" {
+    for_each = range(var.worker_nodes_config[count.index].number_of_pods)
+    iterator = config_index
+    content {
+      name      = "nic-k8s-worker-${count.index}-pod-${config_index.value}"
+      subnet_id = azurerm_subnet.snet_main.id
+      #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_workers.id]
+      #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id]
+      private_ip_address_allocation = "Static"
+      private_ip_address            = cidrhost(var.worker_nodes_config[count.index].cidr, config_index.value)
+    }
+  }
 }
 
 resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
@@ -42,13 +43,15 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = "Standard_B2s"
-  #custom_data         = var.custom_data
-  admin_username      = var.admin_username
+  custom_data = base64encode(templatefile(var.worker_custom_data_template, {
+    pod_cidr = var.worker_nodes_config[count.index].pod_cidr
+  }))
+  admin_username = var.admin_username
   network_interface_ids = [
     azurerm_network_interface.nic_k8s_worker[count.index].id,
   ]
   tags = {
-    "pod-cidr" = var.worker_nodes_config[0].pod_cidr
+    "pod-cidr" = var.worker_nodes_config[count.index].pod_cidr
   }
   admin_ssh_key {
     username   = var.admin_username

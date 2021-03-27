@@ -2,7 +2,11 @@ variable "landing_zone_name" {
   type = string
 }
 
-variable "custom_data" {
+variable "master_custom_data_template" {
+  type = string
+}
+
+variable "worker_custom_data_template" {
   type = string
 }
 

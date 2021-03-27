@@ -14,27 +14,26 @@ resource "azurerm_network_interface" "nic_k8s_master" {
   location            = var.location
   resource_group_name = var.resource_group_name
   ip_configuration {
-    name                          = "internal-${count.index}"
-    subnet_id                     = azurerm_subnet.snet_main.id
+    name      = "internal-${count.index}"
+    subnet_id = azurerm_subnet.snet_main.id
     #public_ip_address_id          = azurerm_public_ip.pip_k8s_master[count.index].id
     private_ip_address_allocation = "Static"
     private_ip_address            = var.master_nodes_config[count.index].private_ip_address
     primary                       = true
   }
 
-  #No point in allocating pod CIDR for master nodes
-  # dynamic "ip_configuration" {
-  #   for_each = range(local.master_number_of_pods)
-  #   iterator = config_index
-  #   content {
-  #     name      = "nic-k8s-master-${count.index}-pod-${config_index.value}"
-  #     subnet_id = azurerm_subnet.snet_main.id
-  #     #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
-  #     #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id]
-  #     private_ip_address_allocation = "Static"
-  #     private_ip_address            = "10.1.1.${local.master_ip_start + count.index * local.master_number_of_ips + config_index.value + 1}"
-  #   }
-  # }
+  dynamic "ip_configuration" {
+    for_each = range(var.master_nodes_config[count.index].number_of_pods)
+    iterator = config_index
+    content {
+      name      = "nic-k8s-master-${count.index}-pod-${config_index.value}"
+      subnet_id = azurerm_subnet.snet_main.id
+      #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
+      #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id]
+      private_ip_address_allocation = "Static"
+      private_ip_address            = cidrhost(var.master_nodes_config[count.index].cidr, config_index.value)
+    }
+  }
 }
 
 resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
@@ -43,12 +42,16 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = "Standard_B2s"
-  custom_data         = var.custom_data
-  admin_username      = var.admin_username
+  custom_data = base64encode(templatefile(var.master_custom_data_template, {
+    pod_cidr = var.master_nodes_config[count.index].pod_cidr
+  }))
+  admin_username = var.admin_username
   network_interface_ids = [
     azurerm_network_interface.nic_k8s_master[count.index].id,
   ]
-
+  tags = {
+    "pod-cidr" = var.master_nodes_config[count.index].pod_cidr
+  }
   admin_ssh_key {
     username   = var.admin_username
     public_key = data.azurerm_ssh_public_key.ssh_public_key.public_key

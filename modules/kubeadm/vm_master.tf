@@ -1,12 +1,12 @@
-resource "azurerm_public_ip" "pip_k8s_master" {
-  count               = length(var.master_nodes_config)
-  name                = "pip-k8s-master-${count.index}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  sku                 = "Standard"
-  allocation_method   = "Static"
-  domain_name_label   = "cloudruler-k8s-master-${count.index}"
-}
+# resource "azurerm_public_ip" "pip_k8s_master" {
+#   count               = length(var.master_nodes_config)
+#   name                = "pip-k8s-master-${count.index}"
+#   location            = var.location
+#   resource_group_name = var.resource_group_name
+#   sku                 = "Standard"
+#   allocation_method   = "Static"
+#   domain_name_label   = "cloudruler-k8s-master-${count.index}"
+# }
 
 resource "azurerm_network_interface" "nic_k8s_master" {
   count               = length(var.master_nodes_config)
@@ -16,7 +16,7 @@ resource "azurerm_network_interface" "nic_k8s_master" {
   ip_configuration {
     name                          = "internal-${count.index}"
     subnet_id                     = azurerm_subnet.snet_main.id
-    public_ip_address_id          = azurerm_public_ip.pip_k8s_master[count.index].id
+    #public_ip_address_id          = azurerm_public_ip.pip_k8s_master[count.index].id
     private_ip_address_allocation = "Static"
     private_ip_address            = var.master_nodes_config[count.index].private_ip_address
     primary                       = true
@@ -116,17 +116,17 @@ resource "azurerm_network_interface_nat_rule_association" "nic_k8s_master_lb_nat
   nat_rule_id           = azurerm_lb_nat_rule.lb_nat_k8s_master[count.index].id
 }
 
-resource "azurerm_lb_outbound_rule" "lbe_out_rule_k8s_master" {
-  resource_group_name     = var.resource_group_name
-  loadbalancer_id         = azurerm_lb.lbe_k8s.id
-  name                    = "lbe-master-rule"
-  protocol                = "Tcp"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id
+# resource "azurerm_lb_outbound_rule" "lbe_out_rule_k8s_master" {
+#   resource_group_name     = var.resource_group_name
+#   loadbalancer_id         = azurerm_lb.lbe_k8s.id
+#   name                    = "lbe-master-rule"
+#   protocol                = "Tcp"
+#   backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id
 
-  frontend_ip_configuration {
-    name = azurerm_lb.lbe_k8s.frontend_ip_configuration[0].name
-  }
-}
+#   frontend_ip_configuration {
+#     name = azurerm_lb.lbe_k8s.frontend_ip_configuration[0].name
+#   }
+# }
 
 resource "azurerm_lb_rule" "lbe_k8s_api_rule" {
   resource_group_name            = var.resource_group_name
@@ -138,7 +138,7 @@ resource "azurerm_lb_rule" "lbe_k8s_api_rule" {
   frontend_ip_configuration_name = azurerm_lb.lbe_k8s.frontend_ip_configuration[0].name
   backend_address_pool_id        = azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id
   probe_id                       = azurerm_lb_probe.lbe_prb_k8s.id
-  disable_outbound_snat          = true
+  disable_outbound_snat          = false
 }
 
 # resource "azurerm_linux_virtual_machine_scale_set" "vmss_k8s_master" {

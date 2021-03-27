@@ -3,8 +3,8 @@ resource "azurerm_public_ip" "pip_k8s_master" {
   name                = "pip-k8s-master-${count.index}"
   location            = var.location
   resource_group_name = var.resource_group_name
-  sku                 = "Basic"
-  allocation_method   = "Dynamic"
+  sku                 = "Standard"
+  allocation_method   = "Static"
   domain_name_label   = "cloudruler-k8s-master-${count.index}"
 }
 

@@ -16,7 +16,7 @@ resource "azurerm_network_interface" "nic_k8s_master" {
   ip_configuration {
     name                          = "internal-${count.index}"
     subnet_id                     = azurerm_subnet.snet_main.id
-    public_ip_address_id          = azurerm_public_ip.pip_k8s_worker[count.index].id
+    public_ip_address_id          = azurerm_public_ip.pip_k8s_master[count.index].id
     private_ip_address_allocation = "Static"
     private_ip_address            = var.master_nodes_config[count.index].private_ip_address
     primary                       = true

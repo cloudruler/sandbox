@@ -45,6 +45,16 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   custom_data = base64encode(templatefile(var.master_custom_data_template, {
     pod_cidr = var.master_nodes_config[count.index].pod_cidr
     vnet_cidr = var.vnet_cidr
+    subnet_cidr = var.subnet_cidr
+    tenant_id = azurerm_client_config.current.tenant_id
+    subscription_id = azurerm_client_config.current.subscription_id
+    resource_group_name = var.resource_group_name
+    location = var.location
+    subnet_name = azurerm_subnet.snet_main.name
+    nsg_name = azurerm_network_security_group.nsg_main.name
+    vnet_name = azurerm_virtual_network.vnet_zone.name
+    vnet_resource_group = var.resource_group_name
+    route_table_name = azurerm_route_table.route_k8s_pod.name
   }))
   admin_username = var.admin_username
   network_interface_ids = [

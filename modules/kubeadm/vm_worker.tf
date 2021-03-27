@@ -46,6 +46,16 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
   custom_data = base64encode(templatefile(var.worker_custom_data_template, {
     pod_cidr = var.worker_nodes_config[count.index].pod_cidr
     vnet_cidr = var.vnet_cidr
+    subnet_cidr = var.subnet_cidr
+    tenant_id = var.tenant_id
+    subscription_id = var.subscription_id
+    resource_group_name = var.resource_group_name
+    location = var.location
+    subnet_name = azurerm_subnet.snet_main.name
+    nsg_name = azurerm_network_security_group.nsg_main.name
+    vnet_name = azurerm_virtual_network.vnet_zone.name
+    vnet_resource_group = var.resource_group_name
+    route_table_name = azurerm_route_table.route_k8s_pod.name
   }))
   admin_username = var.admin_username
   network_interface_ids = [

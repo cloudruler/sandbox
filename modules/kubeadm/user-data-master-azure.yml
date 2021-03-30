@@ -347,7 +347,7 @@ runcmd:
 #Install containerd as the container runtime
 - [ mkdir, -p, /etc/containerd ]
 - [ systemctl, restart, containerd ]
-#- [${yamlencode( node_type == "master"? "kubeadm init --config /etc/kubeadm/kubeadm-config.yml" : "kubeadm init --config /etc/kubeadm/kubeadm-config.yml" )}]
+#- [${ node_type == "master"? "'kubeadm init --config /etc/kubeadm/kubeadm-config.yml'" : "'kubeadm init --config /etc/kubeadm/kubeadm-config.yml'" }]
 #- [ kubeadm, init, '--config /etc/kubeadm/kubeadm-config.yml' ]
 #sudo kubeadm config images pull --cri-socket unix:///run/containerd/containerd.sock
 #sudo kubeadm config print init-defaults --cri-socket unix:///run/containerd/containerd.sock

@@ -246,17 +246,6 @@ write_files:
             }
         ]
     }
-#Configure IP configurations inside ubuntu
-#TODO need to assign IP addresses
-- path: /etc/netplan/60-static.yaml
-  permissions: '0644'
-  content: |
-    network:
-        version: 2
-        ethernets:
-            eth0:
-                addresses:
-                    - ${pod_cidr}
 #Install Azure CNI plugin
 - path: /etc/kubeadm/install-cni-plugin.sh
   permissions: '0744'

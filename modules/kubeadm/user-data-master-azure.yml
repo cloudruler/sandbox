@@ -148,7 +148,7 @@ write_files:
         base_image_size = ""
         async_remove = false
 # kubeadm config file
-- path: /etc/kubeadam/kubeadm-config.yml
+- path: /etc/kubeadm/kubeadm-config.yml
   permissions: '0644'
   content: |
     apiVersion: kubeadm.k8s.io/v1beta2
@@ -370,18 +370,19 @@ runcmd:
 
 #container-runtime=remote   --container-runtime-endpoint=<path>    --cgroup-driver  --cri-socket
 
-#grep -i -n --color error /var/log/cloud-init.log
-#grep -i -n --color warn /var/log/cloud-init.log
+# grep -i -n --color error /var/log/cloud-init.log
+# grep -i -n --color warn /var/log/cloud-init.log
 #sudo cat -n /var/log/cloud-init.log
 
-#grep -i -n --color error /var/log/cloud-init-output.log
-#grep -i -n --color warn /var/log/cloud-init-output.log
+# grep -i -n --color error /var/log/cloud-init-output.log
+# grep -i -n --color warn /var/log/cloud-init-output.log
 #sudo cat -n /var/log/cloud-init-output.log
 
 #sudo systemctl status kubelet
 #sudo journalctl -xeu kubelet
 
-
+#cat /var/lib/cloud/instance user-data.txt
+#cloud-init devel schema --config-file /var/lib/cloud/instance user-data.txt
 #cloud-init devel schema --config-file /mnt/c/Users/brian/git/cloudruler/infrastructure/sandbox/user-data-master-azure.yml
 
 #kubeadm token generate
@@ -396,5 +397,7 @@ runcmd:
 #i can curl API server from the node
 #try setting configuration values
 #try connecting kubectl to the API server
+
+
 
 #--cloud-provider=azure

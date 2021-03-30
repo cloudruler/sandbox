@@ -326,10 +326,14 @@ write_files:
 
     printf "azure-vnet CNI plugin is successfully installed.\n"
 runcmd:
-- [ mkdir, -p, /tmp/moorebm ]
+- [ mkdir, -p, /etc/kubernetes/pki/etcd ]
 #Grab the certs we need
-- [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.crt, /tmp/moorebm/ca-kubernetes.crt ]
-- [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.prv, /tmp/moorebm/ca-kubernetes.prv ]
+- [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.crt, /etc/kubernetes/pki/ca.crt ]
+- [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.prv, /etc/kubernetes/pki/ca.key ]
+- [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.crt, /etc/kubernetes/pki/etcd/ca.crt ]
+- [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.prv, /etc/kubernetes/pki/etcd/ca.key ]
+- [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.crt, /etc/kubernetes/pki/front-proxy-ca.crt ]
+- [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.prv, /etc/kubernetes/pki/front-proxy-ca.key ]
 #Set up dependencies
 - [ modprobe, overlay ]
 - [ modprobe, br_netfilter ]
@@ -354,7 +358,7 @@ runcmd:
 #Install containerd as the container runtime
 - [ mkdir, -p, /etc/containerd ]
 - [ systemctl, restart, containerd ]
-- [${yamlencode( node_type == "master"? "kubeadm init --config /etc/kubeadm/kubeadm-config.yml"] : "kubeadm init --config /etc/kubeadm/kubeadm-config.yml"] )}]
+- [${yamlencode( node_type == "master"? "kubeadm init --config /etc/kubeadm/kubeadm-config.yml" : "kubeadm init --config /etc/kubeadm/kubeadm-config.yml" )}]
 #- [ kubeadm, init, '--config /etc/kubeadm/kubeadm-config.yml' ]
 #sudo kubeadm config images pull --cri-socket unix:///run/containerd/containerd.sock
 #sudo kubeadm config print init-defaults --cri-socket unix:///run/containerd/containerd.sock

@@ -341,13 +341,13 @@ runcmd:
 - [ apt-get, install, -y, kubelet=1.20.4-00, kubeadm=1.20.4-00, kubectl=1.20.4-00 ]
 - [ apt-mark, hold, kubelet, kubeadm, kubectl ]
 #Install Azure CNI plugin
-- [ /etc/kubeadm/install-cni-plugin.sh, v1.2.7, v0.9.1 ]
+#- [ /etc/kubeadm/install-cni-plugin.sh, v1.2.7, v0.9.1 ]
 #Set up rules to Source NAT anything not destined for the landing zone vnet CIDR
-- [ sh, -c, 'iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d ${vnet_cidr} -j MASQUERADE' ]
+#- [ sh, -c, 'iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d ${vnet_cidr} -j MASQUERADE' ]
 #Install containerd as the container runtime
 - [ mkdir, -p, /etc/containerd ]
 - [ systemctl, restart, containerd ]
-- [${yamlencode( node_type == "master"? "kubeadm init --config /etc/kubeadm/kubeadm-config.yml" : "kubeadm init --config /etc/kubeadm/kubeadm-config.yml" )}]
+#- [${yamlencode( node_type == "master"? "kubeadm init --config /etc/kubeadm/kubeadm-config.yml" : "kubeadm init --config /etc/kubeadm/kubeadm-config.yml" )}]
 #- [ kubeadm, init, '--config /etc/kubeadm/kubeadm-config.yml' ]
 #sudo kubeadm config images pull --cri-socket unix:///run/containerd/containerd.sock
 #sudo kubeadm config print init-defaults --cri-socket unix:///run/containerd/containerd.sock

@@ -1,3 +1,7 @@
+variable "location" {
+  type = string
+}
+
 variable "connectivity_resource_group_name" {
   type = string
 }
@@ -6,8 +10,19 @@ variable "identity_resource_group_name" {
   type = string
 }
 
+variable "key_vault_name" {
+  type = string
+}
 
-variable "location" {
+variable "certificate_names" {
+  type = set(string)
+}
+
+variable "ssh_public_key" {
+  type = string
+}
+
+variable "cluster_public_ip" {
   type = string
 }
 
@@ -35,10 +50,6 @@ variable "subnet_cidr" {
   type = string
 }
 
-variable "ssh_public_key" {
-  type = string
-}
-
-variable "cluster_public_ip" {
+variable "bootstrap_token_secret_name" {
   type = string
 }

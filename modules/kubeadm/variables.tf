@@ -10,15 +10,15 @@ variable "worker_custom_data_template" {
   type = string
 }
 
-variable "location" {
-  type = string
-}
-
 variable "resource_group_name" {
   type = string
 }
 
 variable "admin_username" {
+  type = string
+}
+
+variable "location" {
   type = string
 }
 
@@ -28,6 +28,14 @@ variable "connectivity_resource_group_name" {
 
 variable "identity_resource_group_name" {
   type = string
+}
+
+variable "key_vault_name" {
+  type = string
+}
+
+variable "certificate_names" {
+  type = set(string)
 }
 
 variable "ssh_public_key" {
@@ -59,5 +67,9 @@ variable "vnet_cidr" {
 }
 
 variable "subnet_cidr" {
+  type = string
+}
+
+variable "bootstrap_token_secret_name" {
   type = string
 }

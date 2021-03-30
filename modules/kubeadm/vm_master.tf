@@ -43,18 +43,20 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   location            = var.location
   size                = "Standard_B2s"
   custom_data = base64encode(templatefile(var.master_custom_data_template, {
-    pod_cidr            = var.master_nodes_config[count.index].pod_cidr
-    vnet_cidr           = var.vnet_cidr
-    subnet_cidr         = var.subnet_cidr
-    tenant_id           = data.azurerm_client_config.current.tenant_id
-    subscription_id     = data.azurerm_client_config.current.subscription_id
-    resource_group_name = var.resource_group_name
-    location            = var.location
-    subnet_name         = azurerm_subnet.snet_main.name
-    nsg_name            = azurerm_network_security_group.nsg_main.name
-    vnet_name           = azurerm_virtual_network.vnet_zone.name
+    node_type                = "master"
+    pod_cidr                 = var.master_nodes_config[count.index].pod_cidr
+    vnet_cidr                = var.vnet_cidr
+    subnet_cidr              = var.subnet_cidr
+    tenant_id                = data.azurerm_client_config.current.tenant_id
+    subscription_id          = data.azurerm_client_config.current.subscription_id
+    resource_group_name      = var.resource_group_name
+    location                 = var.location
+    subnet_name              = azurerm_subnet.snet_main.name
+    nsg_name                 = azurerm_network_security_group.nsg_main.name
+    vnet_name                = azurerm_virtual_network.vnet_zone.name
     vnet_resource_group_name = var.resource_group_name
-    route_table_name    = local.route_table_name
+    route_table_name         = local.route_table_name
+    bootstrap_token          = data.azurerm_key_vault_secret.kv_sc_bootstrap_token.value
   }))
   admin_username = var.admin_username
   network_interface_ids = [
@@ -83,6 +85,16 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
 
   identity {
     type = "SystemAssigned"
+  }
+  secret {
+    key_vault_id = data.azurerm_key_vault.kv.id
+    dynamic "certificate" {
+      for_each = var.certificate_names
+      iterator = certificate_name
+      content {
+        url = data.azurerm_key_vault_certificate.kv_certificate[certificate_name.value].secret_id
+      }
+    }
   }
 }
 

@@ -148,9 +148,25 @@ write_files:
         base_image_size = ""
         async_remove = false
 # kubeadm config file
-- path: /tmp/kubeadm-config.yml
+- path: /etc/kubeadam/kubeadm-config.yml
   permissions: '0644'
   content: |
+    apiVersion: kubeadm.k8s.io/v1beta2
+    bootstrapTokens:
+    - groups:
+      - system:bootstrappers:kubeadm:default-node-token
+      token: ${bootstrap_token}
+      ttl: 24h0m0s
+      usages:
+      - signing
+      - authentication
+    kind: InitConfiguration
+    nodeRegistration:
+      criSocket: unix:///run/containerd/containerd.sock
+      taints: ${yamlencode(
+        node_type == "master"? [{ "effect": "NoSchedule", "key": "node-role.kubernetes.io/master"}] : []
+        )}
+    ---
     apiVersion: kubelet.config.k8s.io/v1beta1
     kind: KubeletConfiguration
     cgroupDriver: systemd
@@ -244,7 +260,7 @@ write_files:
                 addresses:
                     - ${pod_cidr}
 #Install Azure CNI plugin
-- path: /tmp/install-cni-plugin.sh
+- path: /etc/kubeadm/install-cni-plugin.sh
   permissions: '0744'
   content: |
     #!/usr/bin/env bash
@@ -312,6 +328,10 @@ write_files:
 
     printf "azure-vnet CNI plugin is successfully installed.\n"
 runcmd:
+- [ 'secretsname=$(find /var/lib/waagent/ -name "*.prv" | cut -c -57)' ]
+- [ mkdir, /tmp/moorebm ]
+- [ cp, $secretsname.crt, /tmp/moorebm/ca-kubernetes.cert ]
+- [ cp, $secretsname.prv, /tmp/moorebm/ca-kubernetes.prv ]
 - [ modprobe, overlay ]
 - [ modprobe, br_netfilter ]
 - [ sysctl, --system ]
@@ -329,16 +349,20 @@ runcmd:
 - [ apt-get, install, -y, kubelet=1.20.4-00, kubeadm=1.20.4-00, kubectl=1.20.4-00 ]
 - [ apt-mark, hold, kubelet, kubeadm, kubectl ]
 #Install Azure CNI plugin
-- [ /tmp/install-cni-plugin.sh, v1.2.7, v0.9.1 ]
+- [ /etc/kubeadm/install-cni-plugin.sh, v1.2.7, v0.9.1 ]
 #Set up rules to Source NAT anything not destined for the landing zone vnet CIDR
 - [ sh, -c, 'iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d ${vnet_cidr} -j MASQUERADE' ]
 #Install containerd as the container runtime
 - [ mkdir, -p, /etc/containerd ]
 - [ systemctl, restart, containerd ]
-#- [ kubeadm, init, '--cri-socket unix:///run/containerd/containerd.sock', '--config /tmp/kubeadm-config.yml' ]
+- ${yamlencode(
+    node_type == "master"? ["kubeadm", "init", "--config /etc/kubeadm/kubeadm-config.yml"] : ["kubeadm", "init", "--config /etc/kubeadm/kubeadm-config.yml"]
+  )}
+#- [ kubeadm, init, '--config /etc/kubeadm/kubeadm-config.yml' ]
 #sudo kubeadm config images pull --cri-socket unix:///run/containerd/containerd.sock
-#sudo kubeadm init --control-plane-endpoint=k8s.cloudruler.io --cri-socket unix:///run/containerd/containerd.sock --config /tmp/kubeadm-config.yml --v=10 --pod-network-cidr 10.2.0.0/24
-#sudo kubeadm init --cri-socket unix:///run/containerd/containerd.sock --config /tmp/kubeadm-config.yml
+#sudo kubeadm config print init-defaults --cri-socket unix:///run/containerd/containerd.sock
+#sudo kubeadm init --control-plane-endpoint=k8s.cloudruler.io --cri-socket unix:///run/containerd/containerd.sock --config /etc/kubeadm/kubeadm-config.yml --v=10 --pod-network-cidr 10.2.0.0/24
+#sudo kubeadm init --config /etc/kubeadm/kubeadm-config.yml --cri-socket unix:///run/containerd/containerd.sock
 
 #sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock logs CONTAINERID
 #sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock ps -a | grep kube | grep -v pause

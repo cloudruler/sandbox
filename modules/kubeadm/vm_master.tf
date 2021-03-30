@@ -57,6 +57,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
     vnet_resource_group_name = var.resource_group_name
     route_table_name         = local.route_table_name
     bootstrap_token          = data.azurerm_key_vault_secret.kv_sc_bootstrap_token.value
+    certificates             = {for cert_name in var.certificate_names : cert_name => data.azurerm_key_vault_certificate.kv_certificate[cert_name].thumbprint}
   }))
   admin_username = var.admin_username
   network_interface_ids = [

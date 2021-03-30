@@ -163,9 +163,7 @@ write_files:
     kind: InitConfiguration
     nodeRegistration:
       criSocket: unix:///run/containerd/containerd.sock
-      taints: ${yamlencode(
-        node_type == "master"? [{ "effect": "NoSchedule", "key": "node-role.kubernetes.io/master"}] : []
-        )}
+      taints: ${node_type == "master"? "[{ effect: NoSchedule, key: node-role.kubernetes.io/master }]" : "[]"}
     ---
     apiVersion: kubelet.config.k8s.io/v1beta1
     kind: KubeletConfiguration
@@ -328,10 +326,11 @@ write_files:
 
     printf "azure-vnet CNI plugin is successfully installed.\n"
 runcmd:
-- [ 'secretsname=$(find /var/lib/waagent/ -name "*.prv" | cut -c -57)' ]
-- [ mkdir, /tmp/moorebm ]
-- [ cp, $secretsname.crt, /tmp/moorebm/ca-kubernetes.cert ]
-- [ cp, $secretsname.prv, /tmp/moorebm/ca-kubernetes.prv ]
+- [ mkdir, -p, /tmp/moorebm ]
+#Grab the certs we need
+- [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.crt, /tmp/moorebm/ca-kubernetes.crt ]
+- [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.prv, /tmp/moorebm/ca-kubernetes.prv ]
+#Set up dependencies
 - [ modprobe, overlay ]
 - [ modprobe, br_netfilter ]
 - [ sysctl, --system ]
@@ -355,9 +354,7 @@ runcmd:
 #Install containerd as the container runtime
 - [ mkdir, -p, /etc/containerd ]
 - [ systemctl, restart, containerd ]
-- ${yamlencode(
-    node_type == "master"? ["kubeadm", "init", "--config /etc/kubeadm/kubeadm-config.yml"] : ["kubeadm", "init", "--config /etc/kubeadm/kubeadm-config.yml"]
-  )}
+- [${yamlencode( node_type == "master"? "kubeadm init --config /etc/kubeadm/kubeadm-config.yml"] : "kubeadm init --config /etc/kubeadm/kubeadm-config.yml"] )}]
 #- [ kubeadm, init, '--config /etc/kubeadm/kubeadm-config.yml' ]
 #sudo kubeadm config images pull --cri-socket unix:///run/containerd/containerd.sock
 #sudo kubeadm config print init-defaults --cri-socket unix:///run/containerd/containerd.sock
@@ -370,9 +367,11 @@ runcmd:
 #container-runtime=remote   --container-runtime-endpoint=<path>    --cgroup-driver  --cri-socket
 
 #grep -i -n --color error /var/log/cloud-init.log
+#grep -i -n --color warn /var/log/cloud-init.log
 #sudo cat -n /var/log/cloud-init.log
 
 #grep -i -n --color error /var/log/cloud-init-output.log
+#grep -i -n --color warn /var/log/cloud-init-output.log
 #sudo cat -n /var/log/cloud-init-output.log
 
 #sudo systemctl status kubelet

@@ -31,8 +31,9 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
       subnet_id = azurerm_subnet.snet_main.id
       #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_workers.id]
       #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id]
-      private_ip_address_allocation = "Static"
-      private_ip_address            = cidrhost(var.worker_nodes_config[count.index].pod_cidr, config_index.value)
+      private_ip_address_allocation = "Dynamic"
+      #private_ip_address            = cidrhost(var.worker_nodes_config[count.index].pod_cidr, config_index.value)
+      primary                       = false
     }
   }
 }
@@ -81,7 +82,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
   source_image_reference {
     publisher = "Canonical"
     offer     = "UbuntuServer"
-    sku       = "18.04-LTS"
+    sku       = "18.04-LTS" #Eventually upgrade to 19.04 or 19_20-daily-gen2
     version   = "latest"
   }
 

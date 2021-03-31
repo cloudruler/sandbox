@@ -9,7 +9,7 @@ resource "azurerm_subnet" "snet_main" {
   name                 = "snet-${var.landing_zone_name}"
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.vnet_zone.name
-  address_prefixes     = flatten([var.subnet_cidr, [for c in var.master_nodes_config : c.pod_cidr], [for c in var.worker_nodes_config : c.pod_cidr]])
+  address_prefixes     = [var.subnet_cidr]
 }
 
 resource "azurerm_network_security_group" "nsg_main" {
@@ -128,26 +128,26 @@ data "azurerm_ssh_public_key" "ssh_public_key" {
   name                = var.ssh_public_key
 }
 
-resource "azurerm_route_table" "route_k8s_pod" {
-  name                          = local.route_table_name
-  location                      = var.location
-  resource_group_name           = var.resource_group_name
-  disable_bgp_route_propagation = true
+# resource "azurerm_route_table" "route_k8s_pod" {
+#   name                          = local.route_table_name
+#   location                      = var.location
+#   resource_group_name           = var.resource_group_name
+#   disable_bgp_route_propagation = true
 
-  dynamic "route" {
-    for_each = range(length(var.worker_nodes_config))
-    iterator = worker_node_index
-    content {
-      name                   = "udr-k8s-pod-${worker_node_index.value}"
-      address_prefix         = var.worker_nodes_config[worker_node_index.value].pod_cidr
-      next_hop_type          = "VirtualAppliance"
-      next_hop_in_ip_address = azurerm_linux_virtual_machine.vm_k8s_worker[worker_node_index.value].private_ip_address
-    }
-  }
-}
+#   dynamic "route" {
+#     for_each = range(length(var.worker_nodes_config))
+#     iterator = worker_node_index
+#     content {
+#       name                   = "udr-k8s-pod-${worker_node_index.value}"
+#       address_prefix         = var.worker_nodes_config[worker_node_index.value].pod_cidr
+#       next_hop_type          = "VirtualAppliance"
+#       next_hop_in_ip_address = azurerm_linux_virtual_machine.vm_k8s_worker[worker_node_index.value].private_ip_address
+#     }
+#   }
+# }
 
-resource "azurerm_subnet_route_table_association" "snet_main_route_k8s_pod" {
-  subnet_id      = azurerm_subnet.snet_main.id
-  route_table_id = azurerm_route_table.route_k8s_pod.id
-}
+# resource "azurerm_subnet_route_table_association" "snet_main_route_k8s_pod" {
+#   subnet_id      = azurerm_subnet.snet_main.id
+#   route_table_id = azurerm_route_table.route_k8s_pod.id
+# }
 

@@ -65,9 +65,9 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
   network_interface_ids = [
     azurerm_network_interface.nic_k8s_worker[count.index].id,
   ]
-  tags = {
-    "pod-cidr" = var.worker_nodes_config[count.index].pod_cidr
-  }
+  # tags = {
+  #   "pod-cidr" = var.worker_nodes_config[count.index].pod_cidr
+  # }
   admin_ssh_key {
     username   = var.admin_username
     public_key = data.azurerm_ssh_public_key.ssh_public_key.public_key

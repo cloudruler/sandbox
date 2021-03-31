@@ -28,7 +28,7 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
     iterator = config_index
     content {
       name      = "nic-k8s-worker-${count.index}-pod-${config_index.value}"
-      subnet_id = azurerm_subnet.snet_pod_worker.id
+      subnet_id = azurerm_subnet.snet_pod_worker[count.index].id
       #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_workers.id]
       #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id]
       private_ip_address_allocation = "Static"
@@ -58,7 +58,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
     vnet_resource_group_name = var.resource_group_name
     route_table_name         = local.route_table_name
     bootstrap_token          = data.azurerm_key_vault_secret.kv_sc_bootstrap_token.value
-    certificates             = {for cert_name in var.certificate_names : cert_name => data.azurerm_key_vault_certificate.kv_certificate[cert_name].thumbprint}
+    certificates             = { for cert_name in var.certificate_names : cert_name => data.azurerm_key_vault_certificate.kv_certificate[cert_name].thumbprint }
   }))
   admin_username = var.admin_username
   network_interface_ids = [

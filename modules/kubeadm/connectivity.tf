@@ -13,7 +13,7 @@ resource "azurerm_subnet" "snet_main" {
 }
 
 resource "azurerm_subnet" "snet_pod_master" {
-  count               = length(var.master_nodes_config)
+  count                = length(var.master_nodes_config)
   name                 = "snet-${var.landing_zone_name}-pod-master"
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.vnet_zone.name
@@ -21,7 +21,7 @@ resource "azurerm_subnet" "snet_pod_master" {
 }
 
 resource "azurerm_subnet" "snet_pod_worker" {
-  count               = length(var.worker_nodes_config)
+  count                = length(var.worker_nodes_config)
   name                 = "snet-${var.landing_zone_name}-pod-worker"
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.vnet_zone.name

@@ -28,7 +28,7 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
     iterator = config_index
     content {
       name      = "nic-k8s-worker-${count.index}-pod-${config_index.value}"
-      subnet_id = azurerm_subnet.snet_pod_worker[count.index].id
+      subnet_id = azurerm_subnet.snet_main.id
       #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_workers.id]
       #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id]
       private_ip_address_allocation = "Static"

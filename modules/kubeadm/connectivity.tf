@@ -12,6 +12,22 @@ resource "azurerm_subnet" "snet_main" {
   address_prefixes     = [var.subnet_cidr]
 }
 
+resource "azurerm_subnet" "snet_pod_master" {
+  count               = length(var.master_nodes_config)
+  name                 = "snet-${var.landing_zone_name}-pod-master"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.vnet_zone.name
+  address_prefixes     = [var.master_nodes_config[count.index].pod_cidr]
+}
+
+resource "azurerm_subnet" "snet_pod_worker" {
+  count               = length(var.worker_nodes_config)
+  name                 = "snet-${var.landing_zone_name}-pod-worker"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.vnet_zone.name
+  address_prefixes     = [var.worker_nodes_config[count.index].pod_cidr]
+}
+
 resource "azurerm_network_security_group" "nsg_main" {
   name                = "nsg-${var.landing_zone_name}"
   location            = var.location

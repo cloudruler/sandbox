@@ -27,7 +27,7 @@ resource "azurerm_network_interface" "nic_k8s_master" {
     iterator = config_index
     content {
       name      = "nic-k8s-master-${count.index}-pod-${config_index.value}"
-      subnet_id = azurerm_subnet.snet_main.id
+      subnet_id = azurerm_subnet.snet_pod_master.id
       #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_masters.id]
       #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id]
       private_ip_address_allocation = "Static"

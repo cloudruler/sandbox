@@ -33,7 +33,7 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
       #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id]
       private_ip_address_allocation = "Dynamic"
       #private_ip_address            = cidrhost(var.worker_nodes_config[count.index].pod_cidr, config_index.value)
-      primary                       = false
+      primary = false
     }
   }
 }

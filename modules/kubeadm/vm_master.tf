@@ -13,6 +13,7 @@ resource "azurerm_network_interface" "nic_k8s_master" {
   name                = "nic-k8s-master-${count.index}"
   location            = var.location
   resource_group_name = var.resource_group_name
+  enable_ip_forwarding = true
   ip_configuration {
     name                          = "internal-${count.index}"
     subnet_id                     = azurerm_subnet.snet_main.id
@@ -32,6 +33,7 @@ resource "azurerm_network_interface" "nic_k8s_master" {
       #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id]
       private_ip_address_allocation = "Static"
       private_ip_address            = cidrhost(var.master_nodes_config[count.index].pod_cidr, config_index.value)
+      primary                       = false
     }
   }
 }

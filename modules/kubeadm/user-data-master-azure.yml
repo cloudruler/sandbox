@@ -371,14 +371,14 @@ runcmd:
 #Install Azure CNI plugin
 - [ /etc/kubeadm/install-cni-plugin.sh, v1.2.7, v0.9.1 ]
 #Initialize the cluster
-- [ sh, -c, 'kubeadm init --config /etc/kubeadm/kubeadm-config.yml' ]
+- [ sh, -c, 'kubeadm init --config /etc/kubeadm/kubeadm-config.yml --v=10' ]
 #- [ kubectl, apply, -f https://raw.githubusercontent.com/Azure/acs-engine/master/parts/k8s/addons/kubernetesmasteraddons-azure-npm-daemonset.yaml ]
 - [ mkdir, -p, /home/${admin_username}/.kube ]
 - [ cp, -i, /etc/kubernetes/admin.conf /home/${admin_username}/.kube/config ]
 - [ chown, '${admin_username}:${admin_username}', /home/${admin_username}/.kube/config ]
 %{ else ~}
 #Join the worker to the cluster
-- [ sh, -c, 'kubeadm join --config /etc/kubeadm/kubeadm-config.yml']
+- [ sh, -c, 'kubeadm join --config /etc/kubeadm/kubeadm-config.yml --v=10']
 %{ endif ~}
 #Set up rules to Source NAT anything not destined for the landing zone vnet CIDR
 #- [ sh, -c, 'iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d ${vnet_cidr} -j MASQUERADE' ]

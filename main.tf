@@ -35,22 +35,23 @@ resource "azurerm_resource_group" "rg" {
 # }
 
 module "kubeadm" {
-  source                           = "./modules/kubeadm"
-  landing_zone_name                = local.landing_zone_name
-  master_custom_data_template      = "./modules/kubeadm/user-data-master-azure.yml"
-  worker_custom_data_template      = "./modules/kubeadm/user-data-master-azure.yml"
-  resource_group_name              = azurerm_resource_group.rg.name
-  location                         = var.location
-  admin_username                   = "cloudruleradmin"
-  connectivity_resource_group_name = var.connectivity_resource_group_name
-  identity_resource_group_name     = var.identity_resource_group_name
-  key_vault_name                   = var.key_vault_name
-  certificate_names                = var.certificate_names
-  ssh_public_key                   = var.ssh_public_key
-  cluster_public_ip                = var.cluster_public_ip
-  master_nodes_config              = var.master_nodes_config
-  worker_nodes_config              = var.worker_nodes_config
-  vnet_cidr                        = var.vnet_cidr
-  subnet_cidr                      = var.subnet_cidr
-  bootstrap_token_secret_name      = var.bootstrap_token_secret_name
+  source                                   = "./modules/kubeadm"
+  landing_zone_name                        = local.landing_zone_name
+  master_custom_data_template              = "./modules/kubeadm/user-data-master-azure.yml"
+  worker_custom_data_template              = "./modules/kubeadm/user-data-master-azure.yml"
+  resource_group_name                      = azurerm_resource_group.rg.name
+  location                                 = var.location
+  admin_username                           = "cloudruleradmin"
+  connectivity_resource_group_name         = var.connectivity_resource_group_name
+  identity_resource_group_name             = var.identity_resource_group_name
+  key_vault_name                           = var.key_vault_name
+  certificate_names                        = var.certificate_names
+  ssh_public_key                           = var.ssh_public_key
+  cluster_public_ip                        = var.cluster_public_ip
+  master_nodes_config                      = var.master_nodes_config
+  worker_nodes_config                      = var.worker_nodes_config
+  vnet_cidr                                = var.vnet_cidr
+  subnet_cidr                              = var.subnet_cidr
+  bootstrap_token_secret_name              = var.bootstrap_token_secret_name
+  discovery_token_ca_cert_hash_secret_name = var.discovery_token_ca_cert_hash_secret_name
 }

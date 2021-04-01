@@ -152,6 +152,18 @@ write_files:
   permissions: '0644'
   content: |
     apiVersion: kubeadm.k8s.io/v1beta2
+    discovery:
+      bootstrapToken:
+        token: ${bootstrap_token}
+        unsafeSkipCAVerification: false
+        caCertHashes:
+        - ${discovery_token_ca_cert_hash}
+      tlsBootstrapToken: ${bootstrap_token}
+    kind: JoinConfiguration
+    nodeRegistration:
+      criSocket: /run/containerd/containerd.sock
+    ---
+    apiVersion: kubeadm.k8s.io/v1beta2
     bootstrapTokens:
     - groups:
       - system:bootstrappers:kubeadm:default-node-token
@@ -162,8 +174,10 @@ write_files:
       - authentication
     kind: InitConfiguration
     nodeRegistration:
-      criSocket: unix:///run/containerd/containerd.sock
-      taints: ${node_type == "master"? "[{ effect: NoSchedule, key: node-role.kubernetes.io/master }]" : "[]"}
+      criSocket: /run/containerd/containerd.sock
+      taints:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
     ---
     apiVersion: kubelet.config.k8s.io/v1beta1
     kind: KubeletConfiguration

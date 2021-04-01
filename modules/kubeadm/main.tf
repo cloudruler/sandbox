@@ -14,6 +14,11 @@ data "azurerm_key_vault_secret" "kv_sc_bootstrap_token" {
   key_vault_id = data.azurerm_key_vault.kv.id
 }
 
+data "azurerm_key_vault_secret" "kv_sc_discovery_token_ca_cert_hash" {
+  name         = var.discovery_token_ca_cert_hash_secret_name
+  key_vault_id = data.azurerm_key_vault.kv.id
+}
+
 data "azurerm_key_vault_certificate" "kv_certificate" {
   for_each     = var.certificate_names
   name         = each.value

@@ -53,3 +53,7 @@ variable "subnet_cidr" {
 variable "bootstrap_token_secret_name" {
   type = string
 }
+
+variable "discovery_token_ca_cert_hash_secret_name" {
+  type = string
+}

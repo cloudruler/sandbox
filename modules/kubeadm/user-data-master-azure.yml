@@ -154,6 +154,7 @@ write_files:
     apiVersion: kubeadm.k8s.io/v1beta2
     discovery:
       bootstrapToken:
+        apiServerEndpoint: k8s.cloudruler.io:6443
         token: ${bootstrap_token}
         unsafeSkipCAVerification: false
         caCertHashes:
@@ -330,13 +331,15 @@ write_files:
     printf "azure-vnet CNI plugin is successfully installed.\n"
 runcmd:
 - [ mkdir, -p, /etc/kubernetes/pki/etcd ]
-#Grab the certs we need
+#If this is a mater node, grab the certs we need
+${if node_type == "master" ~}
 - [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.crt, /etc/kubernetes/pki/ca.crt ]
 - [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.prv, /etc/kubernetes/pki/ca.key ]
 - [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.crt, /etc/kubernetes/pki/etcd/ca.crt ]
 - [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.prv, /etc/kubernetes/pki/etcd/ca.key ]
 - [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.crt, /etc/kubernetes/pki/front-proxy-ca.crt ]
 - [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.prv, /etc/kubernetes/pki/front-proxy-ca.key ]
+${endif ~}
 #Set up dependencies
 - [ modprobe, overlay ]
 - [ modprobe, br_netfilter ]

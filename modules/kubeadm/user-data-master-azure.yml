@@ -154,7 +154,7 @@ write_files:
     apiVersion: kubeadm.k8s.io/v1beta2
     discovery:
       bootstrapToken:
-        apiServerEndpoint: ${api_server_endpoint}:6443
+        apiServerEndpoint: ${api_server_name}:6443
         token: ${bootstrap_token}
         unsafeSkipCAVerification: false
         caCertHashes:

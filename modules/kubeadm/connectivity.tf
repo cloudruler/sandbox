@@ -123,11 +123,6 @@ data "azurerm_public_ip" "pip_k8s" {
   resource_group_name = var.connectivity_resource_group_name
 }
 
-data "azurerm_dns_a_record" "dns_a_k8s" {
-  name = "k8s"
-  resource_group_name = var.connectivity_resource_group_name
-}
-
 data "azurerm_ssh_public_key" "ssh_public_key" {
   resource_group_name = var.identity_resource_group_name
   name                = var.ssh_public_key

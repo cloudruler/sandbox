@@ -46,6 +46,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
   size                = "Standard_B2s"
   custom_data = base64encode(templatefile(var.worker_custom_data_template, {
     node_type                    = "worker"
+    admin_username               = var.admin_username
     pod_cidr                     = var.worker_nodes_config[count.index].pod_cidr
     vnet_cidr                    = var.vnet_cidr
     subnet_cidr                  = var.subnet_cidr

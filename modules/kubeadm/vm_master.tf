@@ -32,6 +32,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   size                = "Standard_B2s"
   custom_data = base64encode(templatefile(var.master_custom_data_template, {
     node_type                    = "master"
+    admin_username               = var.admin_username
     pod_cidr                     = var.master_nodes_config[count.index].pod_cidr
     vnet_cidr                    = var.vnet_cidr
     subnet_cidr                  = var.subnet_cidr

@@ -9,6 +9,11 @@ packages:
 - ca-certificates
 - curl
 write_files:
+- path: /etc/environment
+#Suppress Warning: apt-key output should not be parsed (stdout is not a terminal)
+  content: |
+    APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE="1"
+  append: true
 #Configuration for containerd
 - path: /etc/containerd/config.toml
   permissions: '0644'
@@ -151,19 +156,7 @@ write_files:
 - path: /etc/kubeadm/kubeadm-config.yml
   permissions: '0644'
   content: |
-    apiVersion: kubeadm.k8s.io/v1beta2
-    discovery:
-      bootstrapToken:
-        apiServerEndpoint: ${api_server_name}:6443
-        token: ${bootstrap_token}
-        unsafeSkipCAVerification: false
-        caCertHashes:
-        - ${discovery_token_ca_cert_hash}
-      tlsBootstrapToken: ${bootstrap_token}
-    kind: JoinConfiguration
-    nodeRegistration:
-      criSocket: /run/containerd/containerd.sock
-    ---
+%{ if node_type == "master" ~}
     apiVersion: kubeadm.k8s.io/v1beta2
     bootstrapTokens:
     - groups:
@@ -180,15 +173,29 @@ write_files:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
     ---
+    apiVersion: kubeadm.k8s.io/v1beta2
+    kind: ClusterConfiguration
+    controlPlaneEndpoint: ${ api_server_name }
+    networking:
+      podSubnet: ${pod_cidr}
+%{ else ~}
+    apiVersion: kubeadm.k8s.io/v1beta2
+    discovery:
+      bootstrapToken:
+        apiServerEndpoint: ${api_server_name}:6443
+        token: ${bootstrap_token}
+        unsafeSkipCAVerification: false
+        caCertHashes:
+        - ${discovery_token_ca_cert_hash}
+      tlsBootstrapToken: ${bootstrap_token}
+    kind: JoinConfiguration
+    nodeRegistration:
+      criSocket: /run/containerd/containerd.sock
+%{ endif ~}
+    ---
     apiVersion: kubelet.config.k8s.io/v1beta1
     kind: KubeletConfiguration
     cgroupDriver: systemd
-    ---
-    apiVersion: kubeadm.k8s.io/v1beta2
-    kind: ClusterConfiguration
-    controlPlaneEndpoint: k8s.cloudruler.io
-    networking:
-      podSubnet: ${pod_cidr}
 #Make sure that the overlay and br_netfilter module is loaded
 - path: /etc/modules-load.d/k8s.conf
   permissions: '0644'
@@ -202,6 +209,7 @@ write_files:
     net.bridge.bridge-nf-call-ip6tables = 1
     net.bridge.bridge-nf-call-iptables  = 1
     net.ipv4.ip_forward                 = 1
+%{ if node_type == "master" ~}
 #Azure Cloud Controller Manager Configuration
 - path: /etc/kubernetes/cloud.conf
   permissions: '0644'
@@ -329,17 +337,8 @@ write_files:
     chown root:root $CNI_BIN_DIR/*
 
     printf "azure-vnet CNI plugin is successfully installed.\n"
-runcmd:
-- [ mkdir, -p, /etc/kubernetes/pki/etcd ]
-#If this is a mater node, grab the certs we need
-%{ if node_type == "master" ~}
-- [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.crt, /etc/kubernetes/pki/ca.crt ]
-- [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.prv, /etc/kubernetes/pki/ca.key ]
-- [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.crt, /etc/kubernetes/pki/etcd/ca.crt ]
-- [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.prv, /etc/kubernetes/pki/etcd/ca.key ]
-- [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.crt, /etc/kubernetes/pki/front-proxy-ca.crt ]
-- [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.prv, /etc/kubernetes/pki/front-proxy-ca.key ]
 %{ endif ~}
+runcmd:
 #Set up dependencies
 - [ modprobe, overlay ]
 - [ modprobe, br_netfilter ]
@@ -357,13 +356,30 @@ runcmd:
 - [ sh, -c, 'apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" containerd.io' ]
 - [ apt-get, install, -y, kubelet=1.20.4-00, kubeadm=1.20.4-00, kubectl=1.20.4-00 ]
 - [ apt-mark, hold, kubelet, kubeadm, kubectl ]
-#Install Azure CNI plugin
-- [ /etc/kubeadm/install-cni-plugin.sh, v1.2.7, v0.9.1 ]
 #Install containerd as the container runtime
 - [ mkdir, -p, /etc/containerd ]
 - [ systemctl, restart, containerd ]
-#Run kubeadm init or join depending on node type
-- [ sh, -c, ${ node_type == "master"? "'kubeadm init --config /etc/kubeadm/kubeadm-config.yml'" : "'kubeadm join --config /etc/kubeadm/kubeadm-config.yml'" }]
+%{ if node_type == "master" ~}
+#If this is a master node, grab the certs we need
+- [ mkdir, -p, /etc/kubernetes/pki/etcd ]
+- [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.crt, /etc/kubernetes/pki/ca.crt ]
+- [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.prv, /etc/kubernetes/pki/ca.key ]
+- [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.crt, /etc/kubernetes/pki/etcd/ca.crt ]
+- [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.prv, /etc/kubernetes/pki/etcd/ca.key ]
+- [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.crt, /etc/kubernetes/pki/front-proxy-ca.crt ]
+- [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.prv, /etc/kubernetes/pki/front-proxy-ca.key ]
+#Install Azure CNI plugin
+- [ /etc/kubeadm/install-cni-plugin.sh, v1.2.7, v0.9.1 ]
+#Initialize the cluster
+- [ sh, -c, 'kubeadm init --config /etc/kubeadm/kubeadm-config.yml' ]
 #- [ kubectl, apply, -f https://raw.githubusercontent.com/Azure/acs-engine/master/parts/k8s/addons/kubernetesmasteraddons-azure-npm-daemonset.yaml ]
+- [ mkdir, -p, /home/${admin_username}/.kube ]
+- [ cp, -i, /etc/kubernetes/admin.conf /home/${admin_username}/.kube/config ]
+- [ chown, ${admin_username}:${admin_username}, /home/${admin_username}/.kube/config ]
+%{ else ~}
+#Join the worker to the cluster
+- [ sh, -c, 'kubeadm join --config /etc/kubeadm/kubeadm-config.yml']
+%{ endif ~}
 #Set up rules to Source NAT anything not destined for the landing zone vnet CIDR
 #- [ sh, -c, 'iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d ${vnet_cidr} -j MASQUERADE' ]
+#sudo kubectl apply -f https://raw.githubusercontent.com/Azure/acs-engine/master/parts/k8s/addons/kubernetesmasteraddons-azure-npm-daemonset.yaml

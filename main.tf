@@ -41,7 +41,7 @@ module "kubeadm" {
   worker_custom_data_template              = "./modules/kubeadm/user-data-master-azure.yml"
   resource_group_name                      = azurerm_resource_group.rg.name
   location                                 = var.location
-  admin_username                           = "cloudruleradmin"
+  admin_username                           = var.admin_username
   connectivity_resource_group_name         = var.connectivity_resource_group_name
   identity_resource_group_name             = var.identity_resource_group_name
   key_vault_name                           = var.key_vault_name

@@ -2,6 +2,10 @@ variable "location" {
   type = string
 }
 
+variable "admin_username" {
+  type = string
+}
+
 variable "connectivity_resource_group_name" {
   type = string
 }

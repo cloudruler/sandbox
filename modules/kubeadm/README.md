@@ -10,10 +10,11 @@ container-runtime=remote   --container-runtime-endpoint=<path>    --cgroup-drive
 
 grep -i -n --color error /var/log/cloud-init.log
 grep -i -n --color warn /var/log/cloud-init.log
-sudo cat -n /var/log/cloud-init.log
-
 grep -i -n --color error /var/log/cloud-init-output.log
 grep -i -n --color warn /var/log/cloud-init-output.log
+sudo cat -n /var/log/cloud-init.log
+
+
 sudo cat -n /var/log/cloud-init-output.log
 
 sudo systemctl status kubelet
@@ -40,3 +41,23 @@ try connecting kubectl to the API server
 sudo iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d 10.1.0.0/16 -j MASQUERADE
 
 --cloud-provider=azure
+
+#Check etcd
+sudo ETCDCTL_API=3 etcdctl member list \
+  --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/etcd/ca.pem \
+  --cert=/etc/etcd/kubernetes.pem \
+  --key=/etc/etcd/kubernetes-key.pem
+
+
+#Verify control plane is bootstrapped (run this from a master)
+#This is deprecated and show unhealthy
+kubectl get componentstatuses
+
+###########RUN BOOTSTRAPPING OF WORKER NODES
+
+#Verify workers are bootstapped
+kubectl get nodes
+
+
+controller-manager "http://127.0.0.1:10252/healthz" connection refused

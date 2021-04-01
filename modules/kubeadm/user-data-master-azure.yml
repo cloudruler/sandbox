@@ -172,12 +172,6 @@ write_files:
       taints:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
-    ---
-    apiVersion: kubeadm.k8s.io/v1beta2
-    kind: ClusterConfiguration
-    controlPlaneEndpoint: ${ api_server_name }
-    networking:
-      podSubnet: ${pod_cidr}
 %{ else ~}
     apiVersion: kubeadm.k8s.io/v1beta2
     discovery:
@@ -192,6 +186,12 @@ write_files:
     nodeRegistration:
       criSocket: /run/containerd/containerd.sock
 %{ endif ~}
+    ---
+    apiVersion: kubeadm.k8s.io/v1beta2
+    kind: ClusterConfiguration
+    controlPlaneEndpoint: ${ api_server_name }
+    networking:
+      podSubnet: ${pod_cidr}
     ---
     apiVersion: kubelet.config.k8s.io/v1beta1
     kind: KubeletConfiguration
@@ -374,7 +374,7 @@ runcmd:
 - [ sh, -c, 'kubeadm init --config /etc/kubeadm/kubeadm-config.yml --v=10' ]
 #- [ kubectl, apply, -f https://raw.githubusercontent.com/Azure/acs-engine/master/parts/k8s/addons/kubernetesmasteraddons-azure-npm-daemonset.yaml ]
 - [ mkdir, -p, /home/${admin_username}/.kube ]
-- [ cp, -i, /etc/kubernetes/admin.conf /home/${admin_username}/.kube/config ]
+- [ cp, /etc/kubernetes/admin.conf, /home/${admin_username}/.kube/config ]
 - [ chown, '${admin_username}:${admin_username}', /home/${admin_username}/.kube/config ]
 %{ else ~}
 #Join the worker to the cluster

@@ -61,7 +61,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
     bootstrap_token              = data.azurerm_key_vault_secret.kv_sc_bootstrap_token.value
     discovery_token_ca_cert_hash = data.azurerm_key_vault_secret.kv_sc_discovery_token_ca_cert_hash.value
     certificates                 = { for cert_name in var.certificate_names : cert_name => data.azurerm_key_vault_certificate.kv_certificate[cert_name].thumbprint }
-    api_server_endpoint          = var.api_server_name
+    api_server_name              = var.api_server_name
   }))
   admin_username = var.admin_username
   network_interface_ids = [

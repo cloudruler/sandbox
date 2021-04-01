@@ -348,6 +348,6 @@ runcmd:
 - [ mkdir, -p, /etc/containerd ]
 - [ systemctl, restart, containerd ]
 #Run kubeadm init or join depending on node type
-- [${ node_type == "master"? "'kubeadm init --config /etc/kubeadm/kubeadm-config.yml'" : "'kubeadm join --config /etc/kubeadm/kubeadm-config.yml'" }]
+- [ sh, -c, ${ node_type == "master"? "'kubeadm init --config /etc/kubeadm/kubeadm-config.yml'" : "'kubeadm join --config /etc/kubeadm/kubeadm-config.yml'" }]
 #- [ kubectl, apply, -f https://raw.githubusercontent.com/Azure/acs-engine/master/parts/k8s/addons/kubernetesmasteraddons-azure-npm-daemonset.yaml ]
 #need to add –network-plugin=cni to kubelet

@@ -154,7 +154,7 @@ write_files:
     apiVersion: kubeadm.k8s.io/v1beta2
     discovery:
       bootstrapToken:
-        apiServerEndpoint: k8s.cloudruler.io:6443
+        apiServerEndpoint: ${api_server_endpoint}:6443
         token: ${bootstrap_token}
         unsafeSkipCAVerification: false
         caCertHashes:
@@ -332,14 +332,14 @@ write_files:
 runcmd:
 - [ mkdir, -p, /etc/kubernetes/pki/etcd ]
 #If this is a mater node, grab the certs we need
-${if node_type == "master" ~}
+%{ if node_type == "master" ~}
 - [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.crt, /etc/kubernetes/pki/ca.crt ]
 - [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.prv, /etc/kubernetes/pki/ca.key ]
 - [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.crt, /etc/kubernetes/pki/etcd/ca.crt ]
 - [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.prv, /etc/kubernetes/pki/etcd/ca.key ]
 - [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.crt, /etc/kubernetes/pki/front-proxy-ca.crt ]
 - [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.prv, /etc/kubernetes/pki/front-proxy-ca.key ]
-${endif ~}
+${ endif ~}
 #Set up dependencies
 - [ modprobe, overlay ]
 - [ modprobe, br_netfilter ]
@@ -359,12 +359,11 @@ ${endif ~}
 - [ apt-mark, hold, kubelet, kubeadm, kubectl ]
 #Install Azure CNI plugin
 - [ /etc/kubeadm/install-cni-plugin.sh, v1.2.7, v0.9.1 ]
-#Set up rules to Source NAT anything not destined for the landing zone vnet CIDR
-#- [ sh, -c, 'iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d ${vnet_cidr} -j MASQUERADE' ]
 #Install containerd as the container runtime
 - [ mkdir, -p, /etc/containerd ]
 - [ systemctl, restart, containerd ]
 #Run kubeadm init or join depending on node type
 - [ sh, -c, ${ node_type == "master"? "'kubeadm init --config /etc/kubeadm/kubeadm-config.yml'" : "'kubeadm join --config /etc/kubeadm/kubeadm-config.yml'" }]
 #- [ kubectl, apply, -f https://raw.githubusercontent.com/Azure/acs-engine/master/parts/k8s/addons/kubernetesmasteraddons-azure-npm-daemonset.yaml ]
-#need to add –network-plugin=cni to kubelet
+#Set up rules to Source NAT anything not destined for the landing zone vnet CIDR
+#- [ sh, -c, 'iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d ${vnet_cidr} -j MASQUERADE' ]

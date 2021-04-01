@@ -339,7 +339,7 @@ runcmd:
 - [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.prv, /etc/kubernetes/pki/etcd/ca.key ]
 - [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.crt, /etc/kubernetes/pki/front-proxy-ca.crt ]
 - [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.prv, /etc/kubernetes/pki/front-proxy-ca.key ]
-${ endif ~}
+%{ endif ~}
 #Set up dependencies
 - [ modprobe, overlay ]
 - [ modprobe, br_netfilter ]

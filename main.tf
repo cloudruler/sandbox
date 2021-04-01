@@ -54,4 +54,5 @@ module "kubeadm" {
   subnet_cidr                              = var.subnet_cidr
   bootstrap_token_secret_name              = var.bootstrap_token_secret_name
   discovery_token_ca_cert_hash_secret_name = var.discovery_token_ca_cert_hash_secret_name
+  api_server_name                          = var.api_server_name
 }

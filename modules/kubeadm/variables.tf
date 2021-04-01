@@ -77,3 +77,7 @@ variable "bootstrap_token_secret_name" {
 variable "discovery_token_ca_cert_hash_secret_name" {
   type = string
 }
+
+variable "api_server_name" {
+  type = string
+}

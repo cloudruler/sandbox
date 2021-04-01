@@ -375,7 +375,7 @@ runcmd:
 #- [ kubectl, apply, -f https://raw.githubusercontent.com/Azure/acs-engine/master/parts/k8s/addons/kubernetesmasteraddons-azure-npm-daemonset.yaml ]
 - [ mkdir, -p, /home/${admin_username}/.kube ]
 - [ cp, -i, /etc/kubernetes/admin.conf /home/${admin_username}/.kube/config ]
-- [ chown, ${admin_username}:${admin_username}, /home/${admin_username}/.kube/config ]
+- [ chown, '${admin_username}:${admin_username}', /home/${admin_username}/.kube/config ]
 %{ else ~}
 #Join the worker to the cluster
 - [ sh, -c, 'kubeadm join --config /etc/kubeadm/kubeadm-config.yml']

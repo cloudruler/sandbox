@@ -13,9 +13,14 @@ grep -i -n --color warn /var/log/cloud-init.log
 grep -i -n --color error /var/log/cloud-init-output.log
 grep -i -n --color warn /var/log/cloud-init-output.log
 sudo cat -n /var/log/cloud-init.log
-
-
 sudo cat -n /var/log/cloud-init-output.log
+
+
+
+
+
+
+
 
 sudo systemctl status kubelet
 sudo journalctl -xeu kubelet

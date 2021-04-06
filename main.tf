@@ -5,7 +5,7 @@ provider "azurerm" {
 data "azurerm_client_config" "current" {}
 
 module "common" {
-  source  = "git::https://cloudruler@dev.azure.com/cloudruler/infrastructure/_git/terraform-cloudruler-common"
+  source  = "../terraform-cloudruler-common"
   #source  = "app.terraform.io/cloudruler/common/cloudruler"
   #version = "1.0.0"
 }

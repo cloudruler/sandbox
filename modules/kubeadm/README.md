@@ -8,10 +8,10 @@ sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock ps -a | gr
 
 container-runtime=remote   --container-runtime-endpoint=<path>    --cgroup-driver  --cri-socket
 
-grep -i -n --color error /var/log/cloud-init.log
-grep -i -n --color warn /var/log/cloud-init.log
-grep -i -n --color error /var/log/cloud-init-output.log
-grep -i -n --color warn /var/log/cloud-init-output.log
+sudo grep -i -n --color error /var/log/cloud-init.log
+sudo grep -i -n --color warn /var/log/cloud-init.log
+sudo grep -i -n --color error /var/log/cloud-init-output.log
+sudo grep -i -n --color warn /var/log/cloud-init-output.log
 sudo cat -n /var/log/cloud-init.log
 sudo cat -n /var/log/cloud-init-output.log
 
@@ -66,3 +66,5 @@ kubectl get nodes
 
 
 controller-manager "http://127.0.0.1:10252/healthz" connection refused
+
+/var/lib/kubelet/config.yaml

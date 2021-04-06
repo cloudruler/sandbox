@@ -22,6 +22,20 @@ resource "azurerm_network_interface" "nic_k8s_master" {
     #private_ip_address            = var.master_nodes_config[count.index].private_ip_address
     primary = true
   }
+
+  dynamic "ip_configuration" {
+    for_each = range(var.master_nodes_config[count.index].number_of_pods)
+    iterator = config_index
+    content {
+      name      = "nic-k8s-master-${count.index}-pod-${config_index.value}"
+      subnet_id = azurerm_subnet.snet_main.id
+      #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_workers.id]
+      #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id]
+      private_ip_address_allocation = "Dynamic"
+      #private_ip_address            = cidrhost(var.worker_nodes_config[count.index].pod_cidr, config_index.value)
+      primary = false
+    }
+  }
 }
 
 resource "azurerm_linux_virtual_machine" "vm_k8s_master" {

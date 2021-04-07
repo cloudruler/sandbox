@@ -215,8 +215,8 @@ write_files:
       - authentication
     nodeRegistration:
       criSocket: unix:///run/containerd/containerd.sock
-      kubeletExtraArgs:
-        network-plugin: cni
+      #kubeletExtraArgs:
+      #  network-plugin: cni
       taints:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
@@ -233,8 +233,8 @@ write_files:
       tlsBootstrapToken: ${bootstrap_token}
     nodeRegistration:
       criSocket: unix:///run/containerd/containerd.sock
-      kubeletExtraArgs:
-        network-plugin: cni
+      # kubeletExtraArgs:
+      #   network-plugin: cni
 %{ endif ~}
     ---
     kind: ClusterConfiguration

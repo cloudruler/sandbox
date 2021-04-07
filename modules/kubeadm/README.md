@@ -15,8 +15,9 @@ sudo grep -i -n --color warn /var/log/cloud-init-output.log
 sudo cat -n /var/log/cloud-init.log
 sudo cat -n /var/log/cloud-init-output.log
 
-
-
+sudo cat /etc/cni/net.d/10-azure.conflist
+sudo cat /var/log/azure-vnet.log
+sudo ls -la /opt/cni/bin
 
 
 

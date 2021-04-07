@@ -73,7 +73,7 @@ write_files:
     oom_score = 0
 
     [grpc]
-      address = "/run/containerd/containerd.sock"
+      address = "unix:///run/containerd/containerd.sock"
       tcp_address = ""
       tcp_tls_cert = ""
       tcp_tls_key = ""
@@ -214,7 +214,7 @@ write_files:
       - signing
       - authentication
     nodeRegistration:
-      criSocket: /run/containerd/containerd.sock
+      criSocket: unix:///run/containerd/containerd.sock
       kubeletExtraArgs:
         network-plugin: cni
       taints:
@@ -232,7 +232,7 @@ write_files:
         - ${discovery_token_ca_cert_hash}
       tlsBootstrapToken: ${bootstrap_token}
     nodeRegistration:
-      criSocket: /run/containerd/containerd.sock
+      criSocket: unix:///run/containerd/containerd.sock
       kubeletExtraArgs:
         network-plugin: cni
 %{ endif ~}
@@ -259,66 +259,6 @@ write_files:
     net.bridge.bridge-nf-call-ip6tables = 1
     net.bridge.bridge-nf-call-iptables  = 1
     net.ipv4.ip_forward                 = 1
-%{ if node_type == "master" ~}
-#Azure Cloud Controller Manager Configuration
-- path: /etc/kubernetes/cloud.conf
-  permissions: '0600'
-  content: |
-    {
-        "cloud":"AzurePublicCloud",
-        "tenantId": "${tenant_id}",
-        "subscriptionId": "${subscription_id}",
-        "resourceGroup": "${resource_group_name}",
-        "location": "${location}",
-        "vmType": "standard",
-        "subnetName": "${subnet_name}",
-        "securityGroupName": "${nsg_name}",
-        "vnetName": "${vnet_name}",
-        "vnetResourceGroup": "${vnet_resource_group_name}",
-        "routeTableName": "${route_table_name}",
-        "cloudProviderBackoff": true,
-        "cloudProviderBackoffRetries": 6,
-        "cloudProviderBackoffExponent": 1.5,
-        "cloudProviderBackoffDuration": 5,
-        "cloudProviderBackoffJitter": 1,
-        "cloudProviderRatelimit": true,
-        "cloudProviderRateLimitQPS": 3,
-        "cloudProviderRateLimitBucket": 10,
-        "useManagedIdentityExtension": true,
-        "userAssignedIdentityID": "",
-        "useInstanceMetadata": true,
-        "loadBalancerSku": "Standard",
-        "excludeMasterFromStandardLB": false,
-        "providerVaultName": "",
-        "maximumLoadBalancerRuleCount": 250,
-        "providerKeyName": "k8s",
-        "providerKeyVersion": ""
-    }
-#Azure CNI network config file
-# - path: /etc/cni/net.d/azure-cni.conf
-#   permissions: '0644'
-#   content: |
-#     {
-#         "cniVersion":"0.3.0",
-#         "name":"azure",
-#         "plugins":[
-#             {
-#                 "type":"azure-vnet",
-#                 "mode":"bridge",
-#                 "bridge":"azure0",
-#                 "ipam":{
-#                     "type":"azure-vnet-ipam"
-#                 }
-#             },
-#             {
-#                 "type":"portmap",
-#                 "capabilities":{
-#                     "portMappings":true
-#                 },
-#                 "snat":true
-#             }
-#         ]
-#     }
 #Install Azure CNI plugin
 - path: /etc/kubeadm/install-cni-plugin.sh
   permissions: '0744'
@@ -387,6 +327,66 @@ write_files:
     chown root:root $CNI_BIN_DIR/*
 
     printf "azure-vnet CNI plugin is successfully installed.\n"
+%{ if node_type == "master" ~}
+#Azure Cloud Controller Manager Configuration
+- path: /etc/kubernetes/cloud.conf
+  permissions: '0600'
+  content: |
+    {
+        "cloud":"AzurePublicCloud",
+        "tenantId": "${tenant_id}",
+        "subscriptionId": "${subscription_id}",
+        "resourceGroup": "${resource_group_name}",
+        "location": "${location}",
+        "vmType": "standard",
+        "subnetName": "${subnet_name}",
+        "securityGroupName": "${nsg_name}",
+        "vnetName": "${vnet_name}",
+        "vnetResourceGroup": "${vnet_resource_group_name}",
+        "routeTableName": "${route_table_name}",
+        "cloudProviderBackoff": true,
+        "cloudProviderBackoffRetries": 6,
+        "cloudProviderBackoffExponent": 1.5,
+        "cloudProviderBackoffDuration": 5,
+        "cloudProviderBackoffJitter": 1,
+        "cloudProviderRatelimit": true,
+        "cloudProviderRateLimitQPS": 3,
+        "cloudProviderRateLimitBucket": 10,
+        "useManagedIdentityExtension": true,
+        "userAssignedIdentityID": "",
+        "useInstanceMetadata": true,
+        "loadBalancerSku": "Standard",
+        "excludeMasterFromStandardLB": false,
+        "providerVaultName": "",
+        "maximumLoadBalancerRuleCount": 250,
+        "providerKeyName": "k8s",
+        "providerKeyVersion": ""
+    }
+#Azure CNI network config file
+# - path: /etc/cni/net.d/azure-cni.conf
+#   permissions: '0644'
+#   content: |
+#     {
+#         "cniVersion":"0.3.0",
+#         "name":"azure",
+#         "plugins":[
+#             {
+#                 "type":"azure-vnet",
+#                 "mode":"bridge",
+#                 "bridge":"azure0",
+#                 "ipam":{
+#                     "type":"azure-vnet-ipam"
+#                 }
+#             },
+#             {
+#                 "type":"portmap",
+#                 "capabilities":{
+#                     "portMappings":true
+#                 },
+#                 "snat":true
+#             }
+#         ]
+#     }
 %{ endif ~}
 runcmd:
 #Set up dependencies

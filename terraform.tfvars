@@ -10,7 +10,7 @@ subnet_cidr = "10.1.0.0/20"
 master_nodes_config = [
     {
         private_ip_address = "10.1.0.4"
-        number_of_pods = 0
+        number_of_pods = 30
         pod_cidr = "10.1.0.0/20"
     },
     #{
@@ -29,7 +29,7 @@ worker_nodes_config = [
     {
         private_ip_address = "10.1.0.7"
         number_of_pods = 30
-        pod_cidr = "10.1.64.0/20"
+        pod_cidr = "10.1.0.0/20"
     }#,
     #{
     #    private_ip_address = "10.1.0.8"

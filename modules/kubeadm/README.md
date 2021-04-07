@@ -21,10 +21,13 @@ sudo ls -la /opt/cni/bin
 
 
 
-
+sudo systemctl status containerd
+sudo journalctl -xeu containerd
 
 sudo systemctl status kubelet
 sudo journalctl -xeu kubelet
+
+crictl info
 
 cat /var/lib/cloud/instance user-data.txt
 cloud-init devel schema --config-file /var/lib/cloud/instance user-data.txt

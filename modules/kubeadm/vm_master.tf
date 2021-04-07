@@ -108,11 +108,11 @@ resource "azurerm_application_security_group" "asg_k8s_masters" {
   resource_group_name = var.resource_group_name
 }
 
-resource "azurerm_network_interface_application_security_group_association" "asg_k8s_masters_nic_k8s_master" {
-  count                         = length(var.master_nodes_config)
-  network_interface_id          = azurerm_network_interface.nic_k8s_master[count.index].id
-  application_security_group_id = azurerm_application_security_group.asg_k8s_masters.id
-}
+# resource "azurerm_network_interface_application_security_group_association" "asg_k8s_masters_nic_k8s_master" {
+#   count                         = length(var.master_nodes_config)
+#   network_interface_id          = azurerm_network_interface.nic_k8s_master[count.index].id
+#   application_security_group_id = azurerm_application_security_group.asg_k8s_masters.id
+# }
 
 resource "azurerm_lb_backend_address_pool" "lbe_bep_k8s_master" {
   name            = "lbe-bep-k8s-master"

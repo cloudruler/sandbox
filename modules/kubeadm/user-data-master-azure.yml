@@ -73,7 +73,7 @@ write_files:
     oom_score = 0
 
     [grpc]
-      address = "unix:///run/containerd/containerd.sock"
+      address = "/run/containerd/containerd.sock"
       tcp_address = ""
       tcp_tls_cert = ""
       tcp_tls_key = ""
@@ -406,11 +406,11 @@ runcmd:
 - [ sh, -c, 'apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" containerd.io' ]
 - [ apt-get, install, -y, kubelet=1.20.4-00, kubeadm=1.20.4-00, kubectl=1.20.4-00 ]
 - [ apt-mark, hold, kubelet, kubeadm, kubectl ]
+#Install Azure CNI plugin. Plugin is used by containerd, so it must run before containerd starts.
+- [ /etc/kubeadm/install-cni-plugin.sh, v1.2.8, v0.9.1 ]
 #Install containerd as the container runtime
 - [ mkdir, -p, /etc/containerd ]
 - [ systemctl, restart, containerd ]
-#Install Azure CNI plugin
-- [ /etc/kubeadm/install-cni-plugin.sh, v1.2.8, v0.9.1 ]
 %{ if node_type == "master" ~}
 #If this is a master node, grab the certs we need
 - [ mkdir, -p, /etc/kubernetes/pki/etcd ]

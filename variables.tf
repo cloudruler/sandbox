@@ -65,3 +65,7 @@ variable "discovery_token_ca_cert_hash_secret_name" {
 variable "api_server_name" {
   type = string
 }
+
+variable "k8s_service_subnet" {
+  type = string
+}

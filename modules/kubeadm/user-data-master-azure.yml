@@ -220,6 +220,8 @@ write_files:
       taints:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
+    #Only needed if you want to customize the key with which certs are encrypted when uploaded to the cluster
+    #certificateKey: "e6a2eb8581237ab72a4f494f30285ec12a9694d750b9785706a83bfcbbbd2204"
 %{ else ~}
     kind: JoinConfiguration
     apiVersion: kubeadm.k8s.io/v1beta2
@@ -240,8 +242,12 @@ write_files:
     kind: ClusterConfiguration
     apiVersion: kubeadm.k8s.io/v1beta2
     controlPlaneEndpoint: ${ api_server_name }
+    # apiServer:
+    #   certSANS:
+    #     - k8s.cloudruler.io
     networking:
       podSubnet: ${pod_cidr}
+      serviceSubnet: ${ k8s_service_subnet }
     ---
     kind: KubeletConfiguration
     apiVersion: kubelet.config.k8s.io/v1beta1
@@ -311,11 +317,6 @@ write_files:
     tar -xzf $CNI_BIN_DIR/azure-vnet.tgz -C $CNI_BIN_DIR
     printf "done.\n"
 
-    # Install azure-vnet CNI network configuration file.
-    printf "Installing azure-vnet CNI network configuration file to $CNI_NETCONF_DIR..."
-    mv $CNI_BIN_DIR/*.conflist $CNI_NETCONF_DIR
-    printf "done.\n"
-
     # Install loopback plugin.
     printf "Installing loopback CNI plugin version $CNI_VERSION to $CNI_BIN_DIR..."
     /usr/bin/curl -sSL https://github.com/containernetworking/plugins/releases/download/$CNI_VERSION/cni-plugins-linux-amd64-$CNI_VERSION.tgz > $CNI_BIN_DIR/cni.tgz
@@ -363,35 +364,36 @@ write_files:
         "providerKeyVersion": ""
     }
 #Azure CNI network config file
-# - path: /etc/cni/net.d/azure-cni.conf
-#   permissions: '0644'
-#   content: |
-#     {
-#         "cniVersion":"0.3.0",
-#         "name":"azure",
-#         "plugins":[
-#             {
-#                 "type":"azure-vnet",
-#                 "mode":"bridge",
-#                 "bridge":"azure0",
-#                 "ipam":{
-#                     "type":"azure-vnet-ipam"
-#                 }
-#             },
-#             {
-#                 "type":"portmap",
-#                 "capabilities":{
-#                     "portMappings":true
-#                 },
-#                 "snat":true
-#             }
-#         ]
-#     }
+- path: /etc/cni/net.d/azure-cni.conf
+  permissions: '0644'
+  content: |
+    {
+      "cniVersion":"0.3.0",
+      "name":"azure",
+      "plugins":[
+          {
+            "type":"azure-vnet",
+            "mode":"transparent",
+            "ipsToRouteViaHost":["169.254.20.10"],
+            "ipam":{
+                "type":"azure-vnet-ipam"
+            }
+          },
+          {
+            "type":"portmap",
+            "capabilities":{
+                "portMappings":true
+            },
+            "snat":true
+          }
+      ]
+    }
 %{ endif ~}
 runcmd:
 #Set up dependencies
 - [ modprobe, overlay ]
 - [ modprobe, br_netfilter ]
+#Apply the /etc/sysctl.d/k8s.conf config file to enable IP forwarding and netfilter settings across reboots
 - [ sysctl, --system ]
 #Download Docker's official GPG key
 - [ sh, -c, 'curl -s https://download.docker.com/linux/ubuntu/gpg | apt-key add -' ]
@@ -433,3 +435,4 @@ runcmd:
 #Set up rules to Source NAT anything not destined for the landing zone vnet CIDR
 #- [ sh, -c, 'iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d ${vnet_cidr} -j MASQUERADE' ]
 #sudo kubectl apply -f https://raw.githubusercontent.com/Azure/acs-engine/master/parts/k8s/addons/kubernetesmasteraddons-azure-npm-daemonset.yaml
+#kubectl apply -f https://raw.githubusercontent.com/Azure/azure-container-networking/master/npm/azure-npm.yaml

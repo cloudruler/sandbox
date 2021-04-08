@@ -60,3 +60,5 @@ discovery_token_ca_cert_hash_secret_name = "k8s-discovery-token-ca-cert-hash"
 api_server_name = "k8s.cloudruler.io"
 #Username of the admin user
 admin_username = "cloudruleradmin"
+#CIDR for k8s services
+k8s_service_subnet = "10.96.0.0/12"

@@ -56,4 +56,6 @@ module "kubeadm" {
   bootstrap_token_secret_name              = var.bootstrap_token_secret_name
   discovery_token_ca_cert_hash_secret_name = var.discovery_token_ca_cert_hash_secret_name
   api_server_name                          = var.api_server_name
+  k8s_service_subnet                       = var.k8s_service_subnet
+  cluster_dns                              = var.cluster_dns
 }

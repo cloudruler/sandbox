@@ -62,3 +62,4 @@ api_server_name = "k8s.cloudruler.io"
 admin_username = "cloudruleradmin"
 #CIDR for k8s services
 k8s_service_subnet = "10.96.0.0/12"
+cluster_dns = ""

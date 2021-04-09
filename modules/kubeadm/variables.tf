@@ -85,3 +85,7 @@ variable "api_server_name" {
 variable "k8s_service_subnet" {
   type = string
 }
+
+variable "cluster_dns" {
+  type = string
+}

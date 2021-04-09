@@ -253,13 +253,13 @@ write_files:
     #     - k8s.cloudruler.io
     networking:
       podSubnet: ${pod_cidr}
-      serviceSubnet: ${k8s_service_subnet}
+      #serviceSubnet: ${k8s_service_subnet}
     ---
     kind: KubeletConfiguration
     apiVersion: kubelet.config.k8s.io/v1beta1
     cgroupDriver: systemd
-    clusterDNS:
-    - ${cluster_dns}
+    # clusterDNS:
+    # - ${cluster_dns}
     #staticPodPath: /etc/kubernetes/manifests
 #Make sure that the overlay and br_netfilter module is loaded
 - path: /etc/modules-load.d/k8s.conf
@@ -364,7 +364,7 @@ write_files:
     }
 %{ if node_type == "master" ~}
 #Azure Cloud Controller Manager Configuration
-- path: /etc/kubernetes/cloud.conf
+- path: /etc/kubernetes/azure.json
   permissions: '0600'
   content: |
     {

@@ -64,6 +64,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
     certificates                 = { for cert_name in var.certificate_names : cert_name => data.azurerm_key_vault_certificate.kv_certificate[cert_name].thumbprint }
     api_server_name              = var.api_server_name
     k8s_service_subnet           = var.k8s_service_subnet
+    cluster_dns                  = var.cluster_dns
   }))
   admin_username = var.admin_username
   network_interface_ids = [

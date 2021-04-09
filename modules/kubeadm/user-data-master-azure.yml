@@ -215,8 +215,11 @@ write_files:
       - authentication
     nodeRegistration:
       criSocket: unix:///run/containerd/containerd.sock
-      #kubeletExtraArgs:
-      #  network-plugin: cni
+      kubeletExtraArgs:
+        azure-container-registry-config: /etc/kubernetes/azure.json
+        cloud-config: /etc/kubernetes/azure.json
+        cloud-provider: azure
+        #network-plugin: cni
       taints:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
@@ -235,23 +238,29 @@ write_files:
       tlsBootstrapToken: ${bootstrap_token}
     nodeRegistration:
       criSocket: unix:///run/containerd/containerd.sock
-      # kubeletExtraArgs:
-      #   network-plugin: cni
+      kubeletExtraArgs:
+        azure-container-registry-config: /etc/kubernetes/azure.json
+        cloud-config: /etc/kubernetes/azure.json
+        cloud-provider: azure
+        #network-plugin: cni
 %{ endif ~}
     ---
     kind: ClusterConfiguration
     apiVersion: kubeadm.k8s.io/v1beta2
-    controlPlaneEndpoint: ${ api_server_name }
+    controlPlaneEndpoint: ${api_server_name}
     # apiServer:
     #   certSANS:
     #     - k8s.cloudruler.io
     networking:
       podSubnet: ${pod_cidr}
-      serviceSubnet: ${ k8s_service_subnet }
+      serviceSubnet: ${k8s_service_subnet}
     ---
     kind: KubeletConfiguration
     apiVersion: kubelet.config.k8s.io/v1beta1
     cgroupDriver: systemd
+    clusterDNS:
+    - ${cluster_dns}
+    #staticPodPath: /etc/kubernetes/manifests
 #Make sure that the overlay and br_netfilter module is loaded
 - path: /etc/modules-load.d/k8s.conf
   permissions: '0644'
@@ -328,6 +337,31 @@ write_files:
     chown root:root $CNI_BIN_DIR/*
 
     printf "azure-vnet CNI plugin is successfully installed.\n"
+#Azure CNI network config file. IP 169.254.20.10 represents Azure platform services
+- path: /etc/cni/net.d/azure-cni.conf
+  permissions: '0644'
+  content: |
+    {
+      "cniVersion":"0.3.0",
+      "name":"azure",
+      "plugins":[
+          {
+            "type":"azure-vnet",
+            "mode":"transparent",
+            "ipsToRouteViaHost":["169.254.20.10"],
+            "ipam":{
+                "type":"azure-vnet-ipam"
+            }
+          },
+          {
+            "type":"portmap",
+            "capabilities":{
+                "portMappings":true
+            },
+            "snat":true
+          }
+      ]
+    }
 %{ if node_type == "master" ~}
 #Azure Cloud Controller Manager Configuration
 - path: /etc/kubernetes/cloud.conf
@@ -357,37 +391,1751 @@ write_files:
         "userAssignedIdentityID": "",
         "useInstanceMetadata": true,
         "loadBalancerSku": "Standard",
+        "disableOutboundSNAT": true
         "excludeMasterFromStandardLB": false,
         "providerVaultName": "",
         "maximumLoadBalancerRuleCount": 250,
         "providerKeyName": "k8s",
         "providerKeyVersion": ""
     }
-#Azure CNI network config file
-- path: /etc/cni/net.d/azure-cni.conf
-  permissions: '0644'
+
+#Manifests
+#The addon manager will apply the addons to the cluster and maintain their state
+- path: /etc/kubernetes/manifests/kube-addon-manager.yaml
+  permissions: "0644"
+  encoding: gzip
+  owner: "root"
   content: |
-    {
-      "cniVersion":"0.3.0",
-      "name":"azure",
-      "plugins":[
-          {
-            "type":"azure-vnet",
-            "mode":"transparent",
-            "ipsToRouteViaHost":["169.254.20.10"],
-            "ipam":{
-                "type":"azure-vnet-ipam"
-            }
-          },
-          {
-            "type":"portmap",
-            "capabilities":{
-                "portMappings":true
-            },
-            "snat":true
-          }
-      ]
-    }
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: kube-addon-manager
+      namespace: kube-system
+      version: v1
+      labels:
+        app: kube-addon-manager
+    spec:
+      priorityClassName: system-node-critical
+      hostNetwork: true
+      containers:
+      - name: kube-addon-manager
+        image: mcr.microsoft.com/oss/kubernetes/kube-addon-manager:v9.1.3
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: KUBECONFIG
+          value: "/var/lib/kubelet/kubeconfig"
+        - name: ADDON_PATH
+          value: "/etc/kubernetes/addons"
+        resources:
+          requests:
+            cpu: 5m
+            memory: 50Mi
+        volumeMounts:
+        - name: addons
+          mountPath: /etc/kubernetes/addons
+          readOnly: true
+        - name: msi
+          mountPath: /var/lib/waagent/ManagedIdentity-Settings
+          readOnly: true
+        - name: var-lib-kubelet
+          mountPath: /var/lib/kubelet
+          readOnly: true
+        - name: etc-kubernetes
+          mountPath: /etc/kubernetes
+          readOnly: true
+      volumes:
+      - name: addons
+        hostPath:
+          path: /etc/kubernetes/addons
+      - name: msi
+        hostPath:
+          path: /var/lib/waagent/ManagedIdentity-Settings
+      - name: var-lib-kubelet
+        hostPath:
+          path: /var/lib/kubelet
+      - name: etc-kubernetes
+        hostPath:
+          path: /etc/kubernetes
+
+
+#Addons
+# - path: /etc/kubernetes/addons/audit-policy.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: "root"
+#   content: |
+#     apiVersion: audit.k8s.io/v1
+#     kind: Policy
+#     omitStages:
+#       - RequestReceived
+#     rules:
+#       - level: RequestResponse
+#         resources:
+#         - group: ""
+#           resources: ["pods"]
+#       - level: Metadata
+#         resources:
+#         - group: ""
+#           resources: ["pods/log", "pods/status"]
+#       - level: None
+#         users: ["system:kube-proxy"]
+#         verbs: ["watch"]
+#         resources:
+#         - group: ""
+#           resources: ["endpoints", "services"]
+#       - level: None
+#         userGroups: ["system:authenticated"]
+#         nonResourceURLs:
+#         - /api*
+#         - /version
+#       - level: Request
+#         resources:
+#         - group: ""
+#           resources: ["configmaps"]
+#         namespaces: ["kube-system"]
+#       - level: Request
+#         resources:
+#         - group: ""
+#           resources: ["secrets"]
+#       - level: Request
+#         resources:
+#         - group: ""
+#         - group: extensions
+#       - level: Metadata
+#         omitStages:
+#           - RequestReceived
+
+- path: /etc/kubernetes/addons/azure-cloud-provider.yaml
+  permissions: "0644"
+  encoding: gzip
+  owner: "root"
+  content: |
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      labels:
+        kubernetes.io/cluster-service: "true"
+      name: system:azure-cloud-provider
+    rules:
+    - apiGroups: [""]
+      resources: ["events"]
+      verbs:
+      - create
+      - patch
+      - update
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      labels:
+        kubernetes.io/cluster-service: "true"
+      name: system:azure-cloud-provider
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: system:azure-cloud-provider
+    subjects:
+    - kind: ServiceAccount
+      name: azure-cloud-provider
+      namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: system:azure-persistent-volume-binder
+      labels:
+        kubernetes.io/cluster-service: "true"
+    rules:
+    - apiGroups: ['']
+      resources: ['secrets']
+      verbs:     ['get','create']
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: system:azure-persistent-volume-binder
+      labels:
+        kubernetes.io/cluster-service: "true"
+    roleRef:
+      kind: ClusterRole
+      apiGroup: rbac.authorization.k8s.io
+      name: system:azure-persistent-volume-binder
+    subjects:
+    - kind: ServiceAccount
+      name: persistent-volume-binder
+      namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      labels:
+        kubernetes.io/cluster-service: "true"
+      name: system:azure-cloud-provider-secret-getter
+    rules:
+    - apiGroups: [""]
+      resources: ["secrets"]
+      verbs:
+      - get
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      labels:
+        kubernetes.io/cluster-service: "true"
+      name: system:azure-cloud-provider-secret-getter
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: system:azure-cloud-provider-secret-getter
+    subjects:
+    - kind: ServiceAccount
+      name: azure-cloud-provider
+      namespace: kube-system
+    ---
+    apiVersion: storage.k8s.io/v1beta1
+    kind: StorageClass
+    metadata:
+      name: default
+      annotations:
+        storageclass.beta.kubernetes.io/is-default-class: "true"
+      labels:
+        kubernetes.io/cluster-service: "true"
+    provisioner: kubernetes.io/azure-disk
+    parameters:
+      kind: Managed
+      storageaccounttype: Standard_LRS
+      cachingmode: ReadOnly
+    ---
+    apiVersion: storage.k8s.io/v1beta1
+    kind: StorageClass
+    metadata:
+      name: managed-premium
+      annotations:
+      labels:
+        kubernetes.io/cluster-service: "true"
+    provisioner: kubernetes.io/azure-disk
+    parameters:
+      kind: Managed
+      storageaccounttype: Premium_LRS
+      cachingmode: ReadOnly
+    ---
+    apiVersion: storage.k8s.io/v1beta1
+    kind: StorageClass
+    metadata:
+      name: managed-standard
+      annotations:
+      labels:
+        kubernetes.io/cluster-service: "true"
+    provisioner: kubernetes.io/azure-disk
+    parameters:
+      kind: Managed
+      storageaccounttype: Standard_LRS
+      cachingmode: ReadOnly
+    ---
+    kind: StorageClass
+    apiVersion: storage.k8s.io/v1
+    metadata:
+      name: azurefile
+      annotations:
+      labels:
+        kubernetes.io/cluster-service: "true"
+    provisioner: kubernetes.io/azure-file
+    parameters:
+      skuName: Standard_LRS
+
+- path: /etc/kubernetes/addons/azure-cni-networkmonitor.yaml
+  permissions: "0644"
+  encoding: gzip
+  owner: "root"
+  content: |
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      name: azure-cni-networkmonitor
+      namespace: kube-system
+      labels:
+        app: azure-cnms
+        addonmanager.kubernetes.io/mode: Reconcile
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: azure-cnms
+      updateStrategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 50%
+      template:
+        metadata:
+          labels:
+            k8s-app: azure-cnms
+          annotations:
+            cluster-autoscaler.kubernetes.io/daemonset-pod: "true"
+        spec:
+          priorityClassName: system-node-critical
+          tolerations:
+          - key: CriticalAddonsOnly
+            operator: Exists
+          - key: node-role.kubernetes.io/master
+            operator: Equal
+            value: "true"
+            effect: NoSchedule
+          - operator: "Exists"
+            effect: NoExecute
+          - operator: "Exists"
+            effect: NoSchedule
+          nodeSelector:
+            kubernetes.io/os: linux
+          containers:
+            - name: azure-cnms
+              image: mcr.microsoft.com/containernetworking/networkmonitor:v0.0.8
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                privileged: true
+              resources:
+                requests:
+                  cpu: 30m
+                  memory: 25Mi
+                limits:
+                  cpu: 200m
+                  memory: 256Mi
+              env:
+                - name: HOSTNAME
+                  valueFrom:
+                    fieldRef:
+                      apiVersion: v1
+                      fieldPath: spec.nodeName
+              volumeMounts:
+              - name: ebtables-rule-repo
+                mountPath: /var/run
+              - name: log
+                mountPath: /var/log
+              - name: telemetry
+                mountPath: /opt/cni/bin
+          hostNetwork: true
+          volumes:
+          - name: log
+            hostPath:
+              path: /var/log
+              type: Directory
+          - name: ebtables-rule-repo
+            hostPath:
+              path: /var/run/
+              type: Directory
+          - name: telemetry
+            hostPath:
+              path: /opt/cni/bin
+              type: Directory
+#Flexvolume is deprecated. use https://github.com/kubernetes-sigs/blob-csi-driver
+# - path: /etc/kubernetes/addons/blobfuse-flexvolume.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: "root"
+#   content: |
+#     apiVersion: apps/v1
+#     kind: DaemonSet
+#     metadata:
+#       name: blobfuse-flexvol-installer
+#       namespace: kube-system
+#       labels:
+#         k8s-app: blobfuse
+#         kubernetes.io/cluster-service: "true"
+#     spec:
+#       updateStrategy:
+#         type: RollingUpdate
+#         rollingUpdate:
+#           maxUnavailable: 50%
+#       selector:
+#         matchLabels:
+#           name: blobfuse
+#       template:
+#         metadata:
+#           labels:
+#             name: blobfuse
+#             kubernetes.io/cluster-service: "true"
+#           annotations:
+#             cluster-autoscaler.kubernetes.io/daemonset-pod: "true"
+#         spec:
+#           priorityClassName: system-cluster-critical
+#           affinity:
+#             nodeAffinity:
+#               requiredDuringSchedulingIgnoredDuringExecution:
+#                 nodeSelectorTerms:
+#                 - matchExpressions:
+#                   - key: agentpool
+#                     operator: NotIn
+#                     values:
+#                     - flatcar
+#           containers:
+#           - name: blobfuse-flexvol-installer
+#             image: mcr.microsoft.com/k8s/flexvolume/blobfuse-flexvolume:1.0.8
+#             imagePullPolicy: IfNotPresent
+#             resources:
+#               requests:
+#                 cpu: 50m
+#                 memory: 100Mi
+#               limits:
+#                 cpu: 50m
+#                 memory: 100Mi
+#             volumeMounts:
+#             - name: volplugins
+#               mountPath: /etc/kubernetes/volumeplugins/
+#             - name: varlog
+#               mountPath: /var/log/
+#           volumes:
+#           - name: varlog
+#             hostPath:
+#               path: /var/log/
+#           - name: volplugins
+#             hostPath:
+#               path: /etc/kubernetes/volumeplugins/
+#           nodeSelector:
+#             kubernetes.io/os: linux
+
+# - path: /etc/kubernetes/addons/coredns.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: "root"
+#   content: |
+#     apiVersion: v1
+#     kind: ServiceAccount
+#     metadata:
+#       name: coredns
+#       namespace: kube-system
+#       labels:
+#           kubernetes.io/cluster-service: "true"
+#           addonmanager.kubernetes.io/mode: EnsureExists
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRole
+#     metadata:
+#       labels:
+#         kubernetes.io/bootstrapping: rbac-defaults
+#         addonmanager.kubernetes.io/mode: EnsureExists
+#       name: system:coredns
+#     rules:
+#     - apiGroups:
+#       - ""
+#       resources:
+#       - endpoints
+#       - services
+#       - pods
+#       - namespaces
+#       verbs:
+#       - list
+#       - watch
+#     - apiGroups:
+#       - ""
+#       resources:
+#       - nodes
+#       verbs:
+#       - get
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRoleBinding
+#     metadata:
+#       annotations:
+#         rbac.authorization.kubernetes.io/autoupdate: "true"
+#       labels:
+#         kubernetes.io/bootstrapping: rbac-defaults
+#         addonmanager.kubernetes.io/mode: EnsureExists
+#       name: system:coredns
+#     roleRef:
+#       apiGroup: rbac.authorization.k8s.io
+#       kind: ClusterRole
+#       name: system:coredns
+#     subjects:
+#     - kind: ServiceAccount
+#       name: coredns
+#       namespace: kube-system
+#     ---
+#     apiVersion: v1
+#     kind: ConfigMap
+#     metadata:
+#       name: coredns
+#       namespace: kube-system
+#       labels:
+#         addonmanager.kubernetes.io/mode: EnsureExists
+#     data:
+#       Corefile: |
+#         import conf.d/Corefile*
+#         .:53 {
+#             errors
+#             health
+#             ready
+#             kubernetes cluster.local in-addr.arpa ip6.arpa {
+#                 pods insecure
+#                 fallthrough in-addr.arpa ip6.arpa
+#             }
+#             prometheus :9153
+#             forward . /etc/resolv.conf
+#             cache 30
+#             loop
+#             reload
+#             loadbalance
+#             import custom/*.override
+#         }
+#         import custom/*.server
+#     ---
+#     apiVersion: v1
+#     kind: ConfigMap
+#     metadata:
+#       name: coredns-custom
+#       namespace: kube-system
+#       labels:
+#         addonmanager.kubernetes.io/mode: EnsureExists
+#     data:
+#       Corefile: |
+#         # Add custom CoreDNS configuration here.
+#     ---
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     metadata:
+#       name: coredns
+#       namespace: kube-system
+#       labels:
+#         k8s-app: kube-dns
+#         kubernetes.io/name: "CoreDNS"
+#         kubernetes.io/cluster-service: "true"
+#         addonmanager.kubernetes.io/mode: EnsureExists
+#     spec:
+#       strategy:
+#         type: RollingUpdate
+#         rollingUpdate:
+#           maxUnavailable: 1
+#       selector:
+#         matchLabels:
+#           k8s-app: kube-dns
+#       template:
+#         metadata:
+#           labels:
+#             k8s-app: kube-dns
+#           annotations:
+#             seccomp.security.alpha.kubernetes.io/pod: docker/default
+#         spec:
+#           priorityClassName: system-cluster-critical
+#           affinity:
+#             podAntiAffinity:
+#               preferredDuringSchedulingIgnoredDuringExecution:
+#               - podAffinityTerm:
+#                   labelSelector:
+#                     matchExpressions:
+#                     - key: k8s-app
+#                       operator: In
+#                       values:
+#                       - kube-dns
+#                   topologyKey: failure-domain.beta.kubernetes.io/zone
+#                 weight: 10
+#               - podAffinityTerm:
+#                   labelSelector:
+#                     matchExpressions:
+#                     - key: k8s-app
+#                       operator: In
+#                       values:
+#                       - kube-dns
+#                   topologyKey: kubernetes.io/hostname
+#                 weight: 5
+#           serviceAccountName: coredns
+#           tolerations:
+#             - key: node-role.kubernetes.io/master
+#               effect: NoSchedule
+#             - key: CriticalAddonsOnly
+#               operator: "Exists"
+#             - operator: "Exists"
+#               effect: NoExecute
+#             - operator: "Exists"
+#               effect: NoSchedule
+#           nodeSelector:
+#             kubernetes.io/os: linux
+#           containers:
+#           - name: coredns
+#             image: mcr.microsoft.com/oss/kubernetes/coredns:1.7.0
+#             imagePullPolicy: IfNotPresent
+#             resources:
+#               limits:
+#                 memory: 170Mi
+#               requests:
+#                 cpu: 100m
+#                 memory: 70Mi
+#             args: [ "-conf", "/etc/coredns/Corefile" ]
+#             volumeMounts:
+#             - name: config-volume
+#               mountPath: /etc/coredns
+#               readOnly: true
+#             - mountPath: /etc/coredns/conf.d
+#               name: config-custom
+#               readOnly: true
+#             ports:
+#             - containerPort: 53
+#               name: dns
+#               protocol: UDP
+#             - containerPort: 53
+#               name: dns-tcp
+#               protocol: TCP
+#             - containerPort: 9153
+#               name: metrics
+#               protocol: TCP
+#             livenessProbe:
+#               httpGet:
+#                 path: /health
+#                 port: 8080
+#                 scheme: HTTP
+#               initialDelaySeconds: 60
+#               timeoutSeconds: 5
+#               successThreshold: 1
+#               failureThreshold: 5
+#             readinessProbe:
+#               httpGet:
+#                 path: /ready
+#                 port: 8181
+#                 scheme: HTTP
+#             securityContext:
+#               allowPrivilegeEscalation: false
+#               capabilities:
+#                 add:
+#                 - NET_BIND_SERVICE
+#                 drop:
+#                 - all
+#               readOnlyRootFilesystem: true
+#           dnsPolicy: Default
+#           volumes:
+#             - name: config-volume
+#               configMap:
+#                 name: coredns
+#                 items:
+#                 - key: Corefile
+#                   path: Corefile
+#             - name: config-custom
+#               configMap:
+#                 name: coredns-custom
+#                 items:
+#                 - key: Corefile
+#                   path: Corefile
+#                 optional: true
+#     ---
+#     apiVersion: v1
+#     kind: Service
+#     metadata:
+#       name: kube-dns
+#       namespace: kube-system
+#       annotations:
+#         prometheus.io/port: "9153"
+#         prometheus.io/scrape: "true"
+#       labels:
+#         k8s-app: kube-dns
+#         kubernetes.io/cluster-service: "true"
+#         kubernetes.io/name: CoreDNS
+#         addonmanager.kubernetes.io/mode: EnsureExists
+#     spec:
+#       selector:
+#         k8s-app: kube-dns
+#       clusterIP: ${cluster_dns}
+#       ports:
+#       - name: dns
+#         port: 53
+#         protocol: UDP
+#       - name: dns-tcp
+#         port: 53
+#         protocol: TCP
+#       - name: metrics
+#         port: 9153
+#         protocol: TCP
+#     ---
+#     apiVersion: v1
+#     kind: ServiceAccount
+#     metadata:
+#       name: coredns-autoscaler
+#       namespace: kube-system
+#       labels:
+#         k8s-addon: coredns.addons.k8s.io
+#         addonmanager.kubernetes.io/mode: EnsureExists
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRole
+#     metadata:
+#       labels:
+#         k8s-addon: coredns.addons.k8s.io
+#         addonmanager.kubernetes.io/mode: EnsureExists
+#       name: coredns-autoscaler
+#     rules:
+#       - apiGroups: [""]
+#         resources: ["nodes"]
+#         verbs: ["list","watch"]
+#       - apiGroups: [""]
+#         resources: ["replicationcontrollers/scale"]
+#         verbs: ["get", "update"]
+#       - apiGroups: ["extensions", "apps"]
+#         resources: ["deployments/scale", "replicasets/scale"]
+#         verbs: ["get", "update"]
+#       - apiGroups: [""]
+#         resources: ["configmaps"]
+#         verbs: ["get", "create"]
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRoleBinding
+#     metadata:
+#       labels:
+#         k8s-addon: coredns.addons.k8s.io
+#         addonmanager.kubernetes.io/mode: EnsureExists
+#       name: coredns-autoscaler
+#     roleRef:
+#       apiGroup: rbac.authorization.k8s.io
+#       kind: ClusterRole
+#       name: coredns-autoscaler
+#     subjects:
+#     - kind: ServiceAccount
+#       name: coredns-autoscaler
+#       namespace: kube-system
+#     ---
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     metadata:
+#       name: coredns-autoscaler
+#       namespace: kube-system
+#       labels:
+#         k8s-app: coredns-autoscaler
+#         kubernetes.io/cluster-service: "true"
+#         addonmanager.kubernetes.io/mode: EnsureExists
+#     spec:
+#       selector:
+#         matchLabels:
+#           k8s-app: coredns-autoscaler
+#       template:
+#         metadata:
+#           labels:
+#             k8s-app: coredns-autoscaler
+#         spec:
+#           priorityClassName: system-cluster-critical
+#           tolerations:
+#             - key: node-role.kubernetes.io/master
+#               effect: NoSchedule
+#             - key: CriticalAddonsOnly
+#               operator: "Exists"
+#             - operator: "Exists"
+#               effect: NoExecute
+#             - operator: "Exists"
+#               effect: NoSchedule
+#           nodeSelector:
+#             kubernetes.io/os: linux
+#           containers:
+#           - name: autoscaler
+#             image: mcr.microsoft.com/oss/kubernetes/autoscaler/cluster-proportional-autoscaler:1.7.1
+#             resources:
+#               requests:
+#                 cpu: 20m
+#                 memory: 10Mi
+#             command:
+#             - /cluster-proportional-autoscaler
+#             - --namespace=kube-system
+#             - --configmap=coredns-autoscaler
+#             - --target=Deployment/coredns
+#             - --default-params={"linear":{"coresPerReplica":512,"nodesPerReplica":32,"min":1}}
+#             - --logtostderr=true
+#             - --v=2
+#           serviceAccount: coredns-autoscaler
+#           serviceAccountName: coredns-autoscaler
+
+# - path: /etc/kubernetes/addons/secrets-store-csi-driver.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: "root"
+#   content: |
+#     apiVersion: storage.k8s.io/v1beta1
+#     kind: CSIDriver
+#     metadata:
+#       name: secrets-store.csi.k8s.io
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     spec:
+#       podInfoOnMount: true
+#       attachRequired: false
+#       volumeLifecycleModes:
+#       - Ephemeral
+#     ---
+#     apiVersion: v1
+#     kind: ServiceAccount
+#     metadata:
+#       name: secrets-store-csi-driver
+#       namespace: kube-system
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRole
+#     metadata:
+#       name: secretproviderclasses-role
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     rules:
+#     - apiGroups:
+#       - ""
+#       resources:
+#       - events
+#       verbs:
+#       - create
+#       - patch
+#     - apiGroups:
+#       - ""
+#       resources:
+#       - pods
+#       verbs:
+#       - get
+#       - list
+#       - watch
+#     - apiGroups:
+#       - secrets-store.csi.x-k8s.io
+#       resources:
+#       - secretproviderclasses
+#       verbs:
+#       - get
+#       - list
+#       - watch
+#     - apiGroups:
+#       - secrets-store.csi.x-k8s.io
+#       resources:
+#       - secretproviderclasspodstatuses
+#       verbs:
+#       - create
+#       - delete
+#       - get
+#       - list
+#       - patch
+#       - update
+#       - watch
+#     - apiGroups:
+#       - secrets-store.csi.x-k8s.io
+#       resources:
+#       - secretproviderclasspodstatuses/status
+#       verbs:
+#       - get
+#       - patch
+#       - update
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRoleBinding
+#     metadata:
+#       name: secretproviderclasses-rolebinding
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     roleRef:
+#       apiGroup: rbac.authorization.k8s.io
+#       kind: ClusterRole
+#       name: secretproviderclasses-role
+#     subjects:
+#     - kind: ServiceAccount
+#       name: secrets-store-csi-driver
+#       namespace: kube-system
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRole
+#     metadata:
+#       name: secretprovidersyncing-role
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     rules:
+#     - apiGroups:
+#       - ""
+#       resources:
+#       - secrets
+#       verbs:
+#       - create
+#       - delete
+#       - get
+#       - list
+#       - patch
+#       - update
+#       - watch
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRoleBinding
+#     metadata:
+#       name: secretprovidersyncing-rolebinding
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     roleRef:
+#       apiGroup: rbac.authorization.k8s.io
+#       kind: ClusterRole
+#       name: secretprovidersyncing-role
+#     subjects:
+#     - kind: ServiceAccount
+#       name: secrets-store-csi-driver
+#       namespace: kube-system
+#     ---
+#     apiVersion: apiextensions.k8s.io/v1
+#     kind: CustomResourceDefinition
+#     metadata:
+#       annotations:
+#         controller-gen.kubebuilder.io/version: v0.4.0
+#       creationTimestamp: null
+#       name: secretproviderclasses.secrets-store.csi.x-k8s.io
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     spec:
+#       group: secrets-store.csi.x-k8s.io
+#       names:
+#         kind: SecretProviderClass
+#         listKind: SecretProviderClassList
+#         plural: secretproviderclasses
+#         singular: secretproviderclass
+#       scope: Namespaced
+#       versions:
+#       - name: v1alpha1
+#         schema:
+#           openAPIV3Schema:
+#             description: SecretProviderClass is the Schema for the secretproviderclasses API
+#             properties:
+#               apiVersion:
+#                 description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+#                 type: string
+#               kind:
+#                 description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+#                 type: string
+#               metadata:
+#                 type: object
+#               spec:
+#                 description: SecretProviderClassSpec defines the desired state of SecretProviderClass
+#                 properties:
+#                   parameters:
+#                     additionalProperties:
+#                       type: string
+#                     description: Configuration for specific provider
+#                     type: object
+#                   provider:
+#                     description: Configuration for provider name
+#                     type: string
+#                   secretObjects:
+#                     items:
+#                       description: SecretObject defines the desired state of synced K8s secret objects
+#                       properties:
+#                         data:
+#                           items:
+#                             description: SecretObjectData defines the desired state of synced K8s secret object data
+#                             properties:
+#                               key:
+#                                 description: data field to populate
+#                                 type: string
+#                               objectName:
+#                                 description: name of the object to sync
+#                                 type: string
+#                             type: object
+#                           type: array
+#                         labels:
+#                           additionalProperties:
+#                             type: string
+#                           description: labels of K8s secret object
+#                           type: object
+#                         secretName:
+#                           description: name of the K8s secret object
+#                           type: string
+#                         type:
+#                           description: type of K8s secret object
+#                           type: string
+#                       type: object
+#                     type: array
+#                 type: object
+#               status:
+#                 description: SecretProviderClassStatus defines the observed state of SecretProviderClass
+#                 properties:
+#                   byPod:
+#                     items:
+#                       description: ByPodStatus defines the state of SecretProviderClass as seen by an individual controller
+#                       properties:
+#                         id:
+#                           description: id of the pod that wrote the status
+#                           type: string
+#                         namespace:
+#                           description: namespace of the pod that wrote the status
+#                           type: string
+#                       type: object
+#                     type: array
+#                 type: object
+#             type: object
+#         served: true
+#         storage: true
+#     status:
+#       acceptedNames:
+#         kind: ""
+#         plural: ""
+#       conditions: []
+#       storedVersions: []
+#     ---
+#     apiVersion: apiextensions.k8s.io/v1
+#     kind: CustomResourceDefinition
+#     metadata:
+#       annotations:
+#         controller-gen.kubebuilder.io/version: v0.4.0
+#       creationTimestamp: null
+#       name: secretproviderclasspodstatuses.secrets-store.csi.x-k8s.io
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     spec:
+#       group: secrets-store.csi.x-k8s.io
+#       names:
+#         kind: SecretProviderClassPodStatus
+#         listKind: SecretProviderClassPodStatusList
+#         plural: secretproviderclasspodstatuses
+#         singular: secretproviderclasspodstatus
+#       scope: Namespaced
+#       versions:
+#       - name: v1alpha1
+#         schema:
+#           openAPIV3Schema:
+#             description: SecretProviderClassPodStatus is the Schema for the secretproviderclassespodstatus API
+#             properties:
+#               apiVersion:
+#                 description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+#                 type: string
+#               kind:
+#                 description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+#                 type: string
+#               metadata:
+#                 type: object
+#               status:
+#                 description: SecretProviderClassPodStatusStatus defines the observed state of SecretProviderClassPodStatus
+#                 properties:
+#                   mounted:
+#                     type: boolean
+#                   objects:
+#                     items:
+#                       description: SecretProviderClassObject defines the object fetched from external secrets store
+#                       properties:
+#                         id:
+#                           type: string
+#                         version:
+#                           type: string
+#                       type: object
+#                     type: array
+#                   podName:
+#                     type: string
+#                   secretProviderClassName:
+#                     type: string
+#                   targetPath:
+#                     type: string
+#                 type: object
+#             type: object
+#         served: true
+#         storage: true
+#     status:
+#       acceptedNames:
+#         kind: ""
+#         plural: ""
+#       conditions: []
+#       storedVersions: []
+#     ---
+#     apiVersion: scheduling.k8s.io/v1
+#     kind: PriorityClass
+#     metadata:
+#       name: csi-secrets-store
+#       labels:
+#         addonmanager.kubernetes.io/mode: EnsureExists
+#     value: 1000
+#     globalDefault: false
+#     description: "This is the daemonset priority class for csi-secrets-store"
+#     ---
+#     kind: DaemonSet
+#     apiVersion: apps/v1
+#     metadata:
+#       name: csi-secrets-store
+#       namespace: kube-system
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     spec:
+#       updateStrategy:
+#         type: RollingUpdate
+#         rollingUpdate:
+#           maxUnavailable: 50%
+#       selector:
+#         matchLabels:
+#           app: csi-secrets-store
+#       template:
+#         metadata:
+#           labels:
+#             app: csi-secrets-store
+#         spec:
+#           priorityClassName: csi-secrets-store
+#           serviceAccountName: secrets-store-csi-driver
+#           hostNetwork: true
+#           containers:
+#             - name: node-driver-registrar
+#               image: mcr.microsoft.com/oss/kubernetes-csi/csi-node-driver-registrar:v2.1.0
+#               args:
+#                 - --v=5
+#                 - --csi-address=/csi/csi.sock
+#                 - --kubelet-registration-path=/var/lib/kubelet/plugins/csi-secrets-store/csi.sock
+#               env:
+#                 - name: KUBE_NODE_NAME
+#                   valueFrom:
+#                     fieldRef:
+#                       apiVersion: v1
+#                       fieldPath: spec.nodeName
+#               imagePullPolicy: IfNotPresent
+#               volumeMounts:
+#                 - name: plugin-dir
+#                   mountPath: /csi
+#                 - name: registration-dir
+#                   mountPath: /registration
+#               resources:
+#                 limits:
+#                   cpu: 200m
+#                   memory: 200Mi
+#                 requests:
+#                   cpu: 10m
+#                   memory: 20Mi
+#             - name: secrets-store
+#               image: mcr.microsoft.com/oss/kubernetes-csi/secrets-store/driver:v0.0.19
+#               args:
+#                 - "--endpoint=$(CSI_ENDPOINT)"
+#                 - "--nodeid=$(KUBE_NODE_NAME)"
+#                 - "--provider-volume=/etc/kubernetes/secrets-store-csi-providers"
+#                 - "--grpc-supported-providers=azure"
+#                 - "--metrics-addr=:8095"
+#                 - "--enable-secret-rotation=false"
+#                 - "--rotation-poll-interval=2m"
+#               env:
+#                 - name: CSI_ENDPOINT
+#                   value: unix:///csi/csi.sock
+#                 - name: KUBE_NODE_NAME
+#                   valueFrom:
+#                     fieldRef:
+#                       apiVersion: v1
+#                       fieldPath: spec.nodeName
+#               imagePullPolicy: IfNotPresent
+#               securityContext:
+#                 privileged: true
+#               ports:
+#                 - containerPort: 9808
+#                   name: healthz
+#                   protocol: TCP
+#               livenessProbe:
+#                   failureThreshold: 5
+#                   httpGet:
+#                     path: /healthz
+#                     port: healthz
+#                   initialDelaySeconds: 30
+#                   timeoutSeconds: 10
+#                   periodSeconds: 15
+#               volumeMounts:
+#                 - name: plugin-dir
+#                   mountPath: /csi
+#                 - name: mountpoint-dir
+#                   mountPath: /var/lib/kubelet/pods
+#                   mountPropagation: Bidirectional
+#                 - name: providers-dir
+#                   mountPath: /etc/kubernetes/secrets-store-csi-providers
+#               resources:
+#                 limits:
+#                   cpu: 200m
+#                   memory: 200Mi
+#                 requests:
+#                   cpu: 50m
+#                   memory: 100Mi
+#             - name: liveness-probe
+#               image: mcr.microsoft.com/oss/kubernetes-csi/livenessprobe:v2.2.0
+#               imagePullPolicy: IfNotPresent
+#               args:
+#               - --csi-address=/csi/csi.sock
+#               - --probe-timeout=3s
+#               - --http-endpoint=0.0.0.0:9808
+#               - -v=2
+#               volumeMounts:
+#                 - name: plugin-dir
+#                   mountPath: /csi
+#               resources:
+#                 limits:
+#                   cpu: 200m
+#                   memory: 200Mi
+#                 requests:
+#                   cpu: 10m
+#                   memory: 20Mi
+#           volumes:
+#             - name: mountpoint-dir
+#               hostPath:
+#                 path: /var/lib/kubelet/pods
+#                 type: DirectoryOrCreate
+#             - name: registration-dir
+#               hostPath:
+#                 path: /var/lib/kubelet/plugins_registry/
+#                 type: Directory
+#             - name: plugin-dir
+#               hostPath:
+#                 path: /var/lib/kubelet/plugins/csi-secrets-store/
+#                 type: DirectoryOrCreate
+#             - name: providers-dir
+#               hostPath:
+#                 path: /etc/kubernetes/secrets-store-csi-providers
+#                 type: DirectoryOrCreate
+#           nodeSelector:
+#             kubernetes.io/os: linux
+#     ---
+#     apiVersion: v1
+#     kind: ServiceAccount
+#     metadata:
+#       name: csi-secrets-store-provider-azure
+#       namespace: kube-system
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     ---
+#     apiVersion: apps/v1
+#     kind: DaemonSet
+#     metadata:
+#       name: csi-secrets-store-provider-azure
+#       namespace: kube-system
+#       labels:
+#         app: csi-secrets-store-provider-azure
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     spec:
+#       updateStrategy:
+#         type: RollingUpdate
+#         rollingUpdate:
+#           maxUnavailable: 50%
+#       selector:
+#         matchLabels:
+#           app: csi-secrets-store-provider-azure
+#       template:
+#         metadata:
+#           labels:
+#             app: csi-secrets-store-provider-azure
+#         spec:
+#           priorityClassName: csi-secrets-store
+#           serviceAccountName: csi-secrets-store-provider-azure
+#           hostNetwork: true
+#           containers:
+#             - name: provider-azure-installer
+#               image: mcr.microsoft.com/oss/azure/secrets-store/provider-azure:0.0.12
+#               imagePullPolicy: IfNotPresent
+#               args:
+#                 - --endpoint=unix:///etc/kubernetes/secrets-store-csi-providers/azure.sock
+#               lifecycle:
+#                 preStop:
+#                   exec:
+#                     command:
+#                       - "rm /etc/kubernetes/secrets-store-csi-providers/azure.sock"
+#               volumeMounts:
+#                 - mountPath: "/etc/kubernetes/secrets-store-csi-providers"
+#                   name: providervol
+#                 - name: mountpoint-dir
+#                   mountPath: /var/lib/kubelet/pods
+#                   mountPropagation: HostToContainer
+#               resources:
+#                 limits:
+#                   cpu: 200m
+#                   memory: 200Mi
+#                 requests:
+#                   cpu: 50m
+#                   memory: 100Mi
+#           volumes:
+#             - name: providervol
+#               hostPath:
+#                 path: "/etc/kubernetes/secrets-store-csi-providers"
+#             - name: mountpoint-dir
+#               hostPath:
+#                 path: /var/lib/kubelet/pods
+#           nodeSelector:
+#             kubernetes.io/os: linux
+
+# - path: /etc/kubernetes/addons/ip-masq-agent.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: "root"
+#   content: |
+#     apiVersion: apps/v1
+#     kind: DaemonSet
+#     metadata:
+#       name: azure-ip-masq-agent
+#       namespace: kube-system
+#       labels:
+#         component: azure-ip-masq-agent
+#         kubernetes.io/cluster-service: "true"
+#         addonmanager.kubernetes.io/mode: Reconcile
+#         tier: node
+#     spec:
+#       updateStrategy:
+#         type: RollingUpdate
+#         rollingUpdate:
+#           maxUnavailable: 50%
+#       selector:
+#         matchLabels:
+#           k8s-app: azure-ip-masq-agent
+#           tier: node
+#       template:
+#         metadata:
+#           labels:
+#             k8s-app: azure-ip-masq-agent
+#             tier: node
+#           annotations:
+#             cluster-autoscaler.kubernetes.io/daemonset-pod: "true"
+#         spec:
+#           priorityClassName: system-node-critical
+#           hostNetwork: true
+#           nodeSelector:
+#             kubernetes.io/os: linux
+#           tolerations:
+#           - key: CriticalAddonsOnly
+#             operator: Exists
+#           - key: node-role.kubernetes.io/master
+#             operator: Equal
+#             value: "true"
+#             effect: NoSchedule
+#           - operator: "Exists"
+#             effect: NoExecute
+#           - operator: "Exists"
+#             effect: NoSchedule
+#           containers:
+#           - name: azure-ip-masq-agent
+#             image: mcr.microsoft.com/oss/kubernetes/ip-masq-agent:v2.5.0
+#             imagePullPolicy: IfNotPresent
+#             args:
+#               - --enable-ipv6=false
+#             securityContext:
+#               privileged: true
+#             volumeMounts:
+#               - name: azure-ip-masq-agent-config-volume
+#                 mountPath: /etc/config
+#             resources:
+#               requests:
+#                 cpu: 50m
+#                 memory: 50Mi
+#               limits:
+#                 cpu: 50m
+#                 memory: 250Mi
+#           volumes:
+#             - name: azure-ip-masq-agent-config-volume
+#               configMap:
+#                 name: azure-ip-masq-agent-config
+#     ---
+#     apiVersion: v1
+#     kind: ConfigMap
+#     metadata:
+#       name: azure-ip-masq-agent-config
+#       namespace: kube-system
+#       labels:
+#         component: azure-ip-masq-agent
+#         kubernetes.io/cluster-service: "true"
+#         addonmanager.kubernetes.io/mode: EnsureExists
+#     data:
+#       ip-masq-agent: |-
+#         nonMasqueradeCIDRs:
+#           - ${vnet_cidr}
+#           - 168.63.129.16/32
+#         masqLinkLocal: true
+#         resyncInterval: 60s
+
+# - path: /etc/kubernetes/addons/kube-proxy.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: "root"
+#   content: |
+#     apiVersion: v1
+#     kind: ConfigMap
+#     data:
+#       config.yaml: |
+#         apiVersion: kubeproxy.config.k8s.io/v1alpha1
+#         kind: KubeProxyConfiguration
+#         clientConnection:
+#           kubeconfig: /var/lib/kubelet/kubeconfig
+#         clusterCIDR: "${subnet_cidr}"
+#         mode: "iptables"
+#         featureGates:
+#           {}
+#     metadata:
+#       name: kube-proxy-config
+#       namespace: kube-system
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#         kubernetes.io/cluster-service: "true"
+#         component: kube-proxy
+#         tier: node
+#         k8s-app: kube-proxy
+#     ---
+#     apiVersion: apps/v1
+#     kind: DaemonSet
+#     metadata:
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#         kubernetes.io/cluster-service: "true"
+#         component: kube-proxy
+#         tier: node
+#         k8s-app: kube-proxy
+#       name: kube-proxy
+#       namespace: kube-system
+#     spec:
+#       selector:
+#         matchLabels:
+#           k8s-app: kube-proxy
+#           component: kube-proxy
+#           tier: node
+#       updateStrategy:
+#         type: RollingUpdate
+#         rollingUpdate:
+#           maxUnavailable: 50%
+#       template:
+#         metadata:
+#           labels:
+#             component: kube-proxy
+#             tier: node
+#             k8s-app: kube-proxy
+#           annotations:
+#             cluster-autoscaler.kubernetes.io/daemonset-pod: "true"
+#             scheduler.alpha.kubernetes.io/critical-pod: ''
+#         spec:
+#           priorityClassName: system-node-critical
+#           tolerations:
+#           - key: node-role.kubernetes.io/master
+#             operator: Equal
+#             value: "true"
+#             effect: NoSchedule
+#           - operator: "Exists"
+#             effect: NoExecute
+#           - operator: "Exists"
+#             effect: NoSchedule
+#           - key: CriticalAddonsOnly
+#             operator: Exists
+#           containers:
+#           - command:
+#             - kube-proxy
+#             - --config=/var/lib/kube-proxy/config.yaml
+#             image: mcr.microsoft.com/oss/kubernetes/kube-proxy:v1.18.16
+#             imagePullPolicy: IfNotPresent
+#             name: kube-proxy
+#             resources:
+#               requests:
+#                 cpu: 100m
+#             securityContext:
+#               privileged: true
+#             volumeMounts:
+#             - mountPath: /etc/ssl/certs
+#               name: ssl-certs-host
+#               readOnly: true
+#             - mountPath: /etc/kubernetes
+#               name: etc-kubernetes
+#               readOnly: true
+#             - mountPath: /var/lib/kubelet/kubeconfig
+#               name: kubeconfig
+#               readOnly: true
+#             - mountPath: /run/xtables.lock
+#               name: iptableslock
+#             - mountPath: /lib/modules/
+#               name: kernelmodules
+#               readOnly: true
+#             - mountPath: /var/lib/kube-proxy/config.yaml
+#               subPath: config.yaml
+#               name: kube-proxy-config-volume
+#               readOnly: true
+#           hostNetwork: true
+#           volumes:
+#           - hostPath:
+#               path: /usr/share/ca-certificates
+#             name: ssl-certs-host
+#           - hostPath:
+#               path: /var/lib/kubelet/kubeconfig
+#             name: kubeconfig
+#           - hostPath:
+#               path: /etc/kubernetes
+#             name: etc-kubernetes
+#           - hostPath:
+#               path: /run/xtables.lock
+#             name: iptableslock
+#           - hostPath:
+#               path: /lib/modules/
+#             name: kernelmodules
+#           - configMap:
+#               name: kube-proxy-config
+#             name: kube-proxy-config-volume
+#           nodeSelector:
+#             kubernetes.io/os: linux
+
+# - path: /etc/kubernetes/addons/metrics-server.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: "root"
+#   content: |
+#     apiVersion: v1
+#     kind: ServiceAccount
+#     metadata:
+#       name: metrics-server
+#       namespace: kube-system
+#       labels:
+#         kubernetes.io/cluster-service: "true"
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRole
+#     metadata:
+#       name: system:metrics-server
+#       labels:
+#         kubernetes.io/cluster-service: "true"
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     rules:
+#     - apiGroups:
+#       - ""
+#       resources:
+#       - pods
+#       - nodes
+#       - nodes/stats
+#       - namespaces
+#       verbs:
+#       - get
+#       - list
+#       - watch
+#     - apiGroups:
+#       - "extensions"
+#       resources:
+#       - deployments
+#       verbs:
+#       - get
+#       - list
+#       - watch
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRoleBinding
+#     metadata:
+#       name: system:metrics-server
+#       labels:
+#         kubernetes.io/cluster-service: "true"
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     roleRef:
+#       apiGroup: rbac.authorization.k8s.io
+#       kind: ClusterRole
+#       name: system:metrics-server
+#     subjects:
+#     - kind: ServiceAccount
+#       name: metrics-server
+#       namespace: kube-system
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1beta1
+#     kind: RoleBinding
+#     metadata:
+#       name: metrics-server-auth-reader
+#       namespace: kube-system
+#       labels:
+#         kubernetes.io/cluster-service: "true"
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     roleRef:
+#       apiGroup: rbac.authorization.k8s.io
+#       kind: Role
+#       name: extension-apiserver-authentication-reader
+#     subjects:
+#     - kind: ServiceAccount
+#       name: metrics-server
+#       namespace: kube-system
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1beta1
+#     kind: ClusterRoleBinding
+#     metadata:
+#       name: metrics-server:system:auth-delegator
+#       labels:
+#         kubernetes.io/cluster-service: "true"
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     roleRef:
+#       apiGroup: rbac.authorization.k8s.io
+#       kind: ClusterRole
+#       name: system:auth-delegator
+#     subjects:
+#     - kind: ServiceAccount
+#       name: metrics-server
+#       namespace: kube-system
+#     ---
+#     apiVersion: v1
+#     kind: Service
+#     metadata:
+#       name: metrics-server
+#       namespace: kube-system
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#         kubernetes.io/name: "Metrics-server"
+#         kubernetes.io/cluster-service: "true"
+#     spec:
+#       selector:
+#         k8s-app: metrics-server
+#       ports:
+#       - port: 443
+#         protocol: TCP
+#         targetPort: 443
+#     ---
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     metadata:
+#       name: metrics-server
+#       namespace: kube-system
+#       labels:
+#         k8s-app: metrics-server
+#         kubernetes.io/cluster-service: "true"
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     spec:
+#       selector:
+#         matchLabels:
+#           k8s-app: metrics-server
+#       template:
+#         metadata:
+#           name: metrics-server
+#           labels:
+#             k8s-app: metrics-server
+#         spec:
+#           serviceAccountName: metrics-server
+#           priorityClassName: system-cluster-critical
+#           containers:
+#           - name: metrics-server
+#             image: mcr.microsoft.com/oss/kubernetes/metrics-server:v0.3.7
+#             imagePullPolicy: IfNotPresent
+#             command:
+#             - /metrics-server
+#             - --kubelet-insecure-tls
+#             - --kubelet-preferred-address-types=InternalIP
+#           nodeSelector:
+#             kubernetes.io/os: linux
+#     ---
+#     apiVersion: apiregistration.k8s.io/v1beta1
+#     kind: APIService
+#     metadata:
+#       name: v1beta1.metrics.k8s.io
+#       labels:
+#         kubernetes.io/cluster-service: "true"
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     spec:
+#       service:
+#         name: metrics-server
+#         namespace: kube-system
+#       group: metrics.k8s.io
+#       version: v1beta1
+#       insecureSkipTLSVerify: true
+#       groupPriorityMinimum: 100
+#       versionPriority: 100
+
+# - path: /etc/kubernetes/addons/pod-security-policy.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: "root"
+#   content: |
+#     apiVersion: policy/v1beta1
+#     kind: PodSecurityPolicy
+#     metadata:
+#       name: privileged
+#       annotations:
+#         seccomp.security.alpha.kubernetes.io/allowedProfileNames: "*"
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     spec:
+#       privileged: true
+#       allowPrivilegeEscalation: true
+#       allowedCapabilities:
+#       - "*"
+#       volumes:
+#       - "*"
+#       hostNetwork: true
+#       hostPorts:
+#       - min: 0
+#         max: 65535
+#       hostIPC: true
+#       hostPID: true
+#       runAsUser:
+#         rule: RunAsAny
+#       seLinux:
+#         rule: RunAsAny
+#       supplementalGroups:
+#         rule: RunAsAny
+#       fsGroup:
+#         rule: RunAsAny
+#     ---
+#     apiVersion: policy/v1beta1
+#     kind: PodSecurityPolicy
+#     metadata:
+#       name: restricted
+#       annotations:
+#         seccomp.security.alpha.kubernetes.io/allowedProfileNames: docker/default
+#         apparmor.security.beta.kubernetes.io/allowedProfileNames: runtime/default
+#         seccomp.security.alpha.kubernetes.io/defaultProfileName:  docker/default
+#         apparmor.security.beta.kubernetes.io/defaultProfileName:  runtime/default
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     spec:
+#       privileged: false
+#       allowPrivilegeEscalation: false
+#       requiredDropCapabilities:
+#         - ALL
+#       volumes:
+#         - configMap
+#         - emptyDir
+#         - projected
+#         - secret
+#         - downwardAPI
+#         - persistentVolumeClaim
+#       hostNetwork: false
+#       hostIPC: false
+#       hostPID: false
+#       runAsUser:
+#         rule: MustRunAsNonRoot
+#       seLinux:
+#         rule: RunAsAny
+#       supplementalGroups:
+#         rule: MustRunAs
+#         ranges:
+#           - min: 1
+#             max: 65535
+#       fsGroup:
+#         rule: MustRunAs
+#         ranges:
+#           - min: 1
+#             max: 65535
+#       readOnlyRootFilesystem: false
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRole
+#     metadata:
+#       name: psp:privileged
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     rules:
+#     - apiGroups: ['extensions']
+#       resources: ['podsecuritypolicies']
+#       verbs:     ['use']
+#       resourceNames:
+#       - privileged
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRole
+#     metadata:
+#       name: psp:restricted
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     rules:
+#     - apiGroups: ['extensions']
+#       resources: ['podsecuritypolicies']
+#       verbs:     ['use']
+#       resourceNames:
+#       - restricted
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRoleBinding
+#     metadata:
+#       name: default:restricted
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     roleRef:
+#       apiGroup: rbac.authorization.k8s.io
+#       kind: ClusterRole
+#       name: psp:restricted
+#     subjects:
+#     - kind: Group
+#       name: system:authenticated
+#       apiGroup: rbac.authorization.k8s.io
+#     ---
+#     apiVersion: rbac.authorization.k8s.io/v1
+#     kind: ClusterRoleBinding
+#     metadata:
+#       name: default:privileged
+#       labels:
+#         addonmanager.kubernetes.io/mode: Reconcile
+#     roleRef:
+#       apiGroup: rbac.authorization.k8s.io
+#       kind: ClusterRole
+#       name: psp:privileged
+#     subjects:
+#     - kind: Group
+#       name: system:authenticated
+#       apiGroup: rbac.authorization.k8s.io
+#     - kind: Group
+#       name: system:nodes
+#       apiGroup: rbac.authorization.k8s.io
+
 %{ endif ~}
 runcmd:
 #Set up dependencies

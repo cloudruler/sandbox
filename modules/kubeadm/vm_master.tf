@@ -38,13 +38,8 @@ resource "azurerm_network_interface" "nic_k8s_master" {
   }
 }
 
-resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
-  count               = length(var.master_nodes_config)
-  name                = "vm-k8s-master-${count.index}"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  size                = "Standard_B2s"
-  custom_data = base64encode(templatefile(var.master_custom_data_template, {
+locals {
+  master_custom_data = base64encode(templatefile(var.master_custom_data_template, {
     node_type      = "master"
     admin_username = var.admin_username
     vnet_cidr      = var.vnet_cidr
@@ -57,7 +52,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
       bootstrap_token              = data.azurerm_key_vault_secret.kv_sc_bootstrap_token.value
       api_server_name              = var.api_server_name
       discovery_token_ca_cert_hash = data.azurerm_key_vault_secret.kv_sc_discovery_token_ca_cert_hash.value
-      pod_cidr                     = var.master_nodes_config[count.index].pod_cidr
+      pod_cidr                     = var.master_nodes_config[0].pod_cidr
       k8s_service_subnet           = var.k8s_service_subnet
       cluster_dns                  = var.cluster_dns
     }))
@@ -88,6 +83,15 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
     addons_metrics_server      = filebase64("modules/kubeadm/resources/addons/metrics-server.yaml")
     addons_pod_security_policy = filebase64("modules/kubeadm/resources/addons/pod-security-policy.yaml")
   }))
+}
+
+resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
+  count               = length(var.master_nodes_config)
+  name                = "vm-k8s-master-${count.index}"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  size                = "Standard_B2s"
+  #custom_data = local.master_custom_data
   admin_username = var.admin_username
   network_interface_ids = [
     azurerm_network_interface.nic_k8s_master[count.index].id,

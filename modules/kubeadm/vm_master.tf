@@ -19,7 +19,6 @@ resource "azurerm_network_interface" "nic_k8s_master" {
     subnet_id = azurerm_subnet.snet_main.id
     #public_ip_address_id          = azurerm_public_ip.pip_k8s_master[count.index].id
     private_ip_address_allocation = "Dynamic"
-    #private_ip_address            = var.master_nodes_config[count.index].private_ip_address
     primary = true
   }
 
@@ -32,31 +31,30 @@ resource "azurerm_network_interface" "nic_k8s_master" {
       #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_workers.id]
       #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id]
       private_ip_address_allocation = "Dynamic"
-      #private_ip_address            = cidrhost(var.worker_nodes_config[count.index].pod_cidr, config_index.value)
       primary = false
     }
   }
 }
 
 locals {
-  master_custom_data = base64encode(templatefile(var.master_custom_data_template, {
+  master_custom_data = base64gzip(templatefile(var.master_custom_data_template, {
     node_type      = "master"
     admin_username = var.admin_username
     vnet_cidr      = var.vnet_cidr
     #subnet_cidr                  = var.subnet_cidr
     certificates               = { for cert_name in var.certificate_names : cert_name => data.azurerm_key_vault_certificate.kv_certificate[cert_name].thumbprint }
-    scripts_install_cni_plugin = filebase64("modules/kubeadm/resources/scripts/install-cni-plugin.sh")
-    configs_containerd         = filebase64("modules/kubeadm/resources/configs/containerd-config.toml")
-    configs_kubeadm = base64encode(templatefile("modules/kubeadm/resources/configs/kubeadm-config.yaml", {
+    scripts_install_cni_plugin = base64gzip(file("modules/kubeadm/resources/scripts/install-cni-plugin.sh"))
+    configs_containerd         = base64gzip(file("modules/kubeadm/resources/configs/containerd-config.toml"))
+    configs_kubeadm = base64gzip(templatefile("modules/kubeadm/resources/configs/kubeadm-config.yaml", {
       node_type                    = "master"
       bootstrap_token              = data.azurerm_key_vault_secret.kv_sc_bootstrap_token.value
       api_server_name              = var.api_server_name
       discovery_token_ca_cert_hash = data.azurerm_key_vault_secret.kv_sc_discovery_token_ca_cert_hash.value
-      pod_cidr                     = var.master_nodes_config[0].pod_cidr
+      subnet_cidr                  = var.subnet_cidr
       k8s_service_subnet           = var.k8s_service_subnet
       cluster_dns                  = var.cluster_dns
     }))
-    configs_azure = base64encode(templatefile("modules/kubeadm/resources/configs/azure.json", {
+    configs_azure = base64gzip(templatefile("modules/kubeadm/resources/configs/azure.json", {
       tenant_id                = data.azurerm_client_config.current.tenant_id
       subscription_id          = data.azurerm_client_config.current.subscription_id
       resource_group_name      = var.resource_group_name
@@ -67,21 +65,21 @@ locals {
       nsg_name                 = azurerm_network_security_group.nsg_main.name
       route_table_name         = local.route_table_name
     }))
-    manifests_kube_addon_manager    = filebase64("modules/kubeadm/resources/manifests/kube-addon-manager.yaml")
-    addons_audit_policy             = filebase64("modules/kubeadm/resources/addons/audit-policy.yaml")
-    addons_azure_cloud_provider     = filebase64("modules/kubeadm/resources/addons/azure-cloud-provider.yaml")
-    addons_azure_cni_networkmonitor = filebase64("modules/kubeadm/resources/addons/azure-cni-networkmonitor.yaml")
-    addons_blobfuse_flexvolume      = filebase64("modules/kubeadm/resources/addons/blobfuse-flexvolume.yaml")
-    addons_coredns = base64encode(templatefile("modules/kubeadm/resources/addons/coredns.yaml", {
+    manifests_kube_addon_manager    = base64gzip(file("modules/kubeadm/resources/manifests/kube-addon-manager.yaml"))
+    addons_audit_policy             = base64gzip(file("modules/kubeadm/resources/addons/audit-policy.yaml"))
+    addons_azure_cloud_provider     = base64gzip(file("modules/kubeadm/resources/addons/azure-cloud-provider.yaml"))
+    addons_azure_cni_networkmonitor = base64gzip(file("modules/kubeadm/resources/addons/azure-cni-networkmonitor.yaml"))
+    addons_blobfuse_flexvolume      = base64gzip(file("modules/kubeadm/resources/addons/blobfuse-flexvolume.yaml"))
+    addons_coredns = base64gzip(templatefile("modules/kubeadm/resources/addons/coredns.yaml", {
       cluster_dns = var.cluster_dns
     }))
-    addons_secrets_store_csi_driver = filebase64("modules/kubeadm/resources/addons/secrets-store-csi-driver.yaml")
-    addons_ip_masq_agent = base64encode(templatefile("modules/kubeadm/resources/addons/ip-masq-agent.yaml", {
+    addons_secrets_store_csi_driver = base64gzip(file("modules/kubeadm/resources/addons/secrets-store-csi-driver.yaml"))
+    addons_ip_masq_agent = base64gzip(templatefile("modules/kubeadm/resources/addons/ip-masq-agent.yaml", {
       vnet_cidr = var.vnet_cidr
     }))
-    addons_kube_proxy          = filebase64("modules/kubeadm/resources/addons/kube-proxy.yaml")
-    addons_metrics_server      = filebase64("modules/kubeadm/resources/addons/metrics-server.yaml")
-    addons_pod_security_policy = filebase64("modules/kubeadm/resources/addons/pod-security-policy.yaml")
+    addons_kube_proxy          = base64gzip(file("modules/kubeadm/resources/addons/kube-proxy.yaml"))
+    addons_metrics_server      = base64gzip(file("modules/kubeadm/resources/addons/metrics-server.yaml"))
+    addons_pod_security_policy = base64gzip(file("modules/kubeadm/resources/addons/pod-security-policy.yaml"))
   }))
 }
 
@@ -91,7 +89,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_master" {
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = "Standard_B2s"
-  #custom_data = local.master_custom_data
+  custom_data = local.master_custom_data
   admin_username = var.admin_username
   network_interface_ids = [
     azurerm_network_interface.nic_k8s_master[count.index].id,

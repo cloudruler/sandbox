@@ -48,17 +48,13 @@ variable "cluster_public_ip" {
 
 variable "master_nodes_config" {
   type = list(object({
-    private_ip_address = string
     number_of_pods     = number
-    pod_cidr           = string
   }))
 }
 
 variable "worker_nodes_config" {
   type = list(object({
-    private_ip_address = string
     number_of_pods     = number
-    pod_cidr           = string
   }))
 }
 

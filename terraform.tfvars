@@ -9,37 +9,25 @@ subnet_cidr = "10.1.0.0/20"
 #Configuration for the k8s master nodes
 master_nodes_config = [
   {
-    private_ip_address = "10.1.0.4"
     number_of_pods     = 30
-    pod_cidr           = "10.1.0.0/20"
   },
   #{
-  #    private_ip_address = "10.1.0.5"
   #    number_of_pods = 0
-  #    pod_cidr = "10.1.32.0/20"
   #},
   #{
-  #    private_ip_address = "10.1.0.6"
   #    number_of_pods = 0
-  #    pod_cidr = "10.1.48.0/20"
   #}
 ]
 #Configuration for the k8s worker nodes
 worker_nodes_config = [
   {
-    private_ip_address = "10.1.0.7"
     number_of_pods     = 30
-    pod_cidr           = "10.1.0.0/20"
   } #,
   #{
-  #    private_ip_address = "10.1.0.8"
   #    number_of_pods = 30
-  #    pod_cidr = "10.1.80.0/20"
   #},
   #{
-  #    private_ip_address = "10.1.0.9"
   #    number_of_pods = 30
-  #    pod_cidr = "10.1.96.0/20"
   #}
 ]
 #Resource group for identities, keys, secrets, and certificates

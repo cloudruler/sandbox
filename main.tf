@@ -38,8 +38,8 @@ resource "azurerm_resource_group" "rg" {
 module "kubeadm" {
   source                                   = "./modules/kubeadm"
   landing_zone_name                        = local.landing_zone_name
-  master_custom_data_template              = "modules/kubeadm/resources/cloud-config.yml"
-  worker_custom_data_template              = "modules/kubeadm/resources/cloud-config.yml"
+  master_custom_data_template              = "modules/kubeadm/resources/cloud-config.yaml"
+  worker_custom_data_template              = "modules/kubeadm/resources/cloud-config.yaml"
   resource_group_name                      = azurerm_resource_group.rg.name
   location                                 = var.location
   admin_username                           = var.admin_username

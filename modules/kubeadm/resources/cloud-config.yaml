@@ -46,7 +46,7 @@ write_files:
   content: !!binary |
     ${ scripts_install_cni_plugin }
 #Azure CNI network config file. IP 169.254.20.10 represents Azure platform services
-- path: /etc/cni/net.d/azure-cni.conf
+- path: /etc/cni/net.d/10-azure.conflist
   permissions: '0644'
   content: |
     {
@@ -73,7 +73,7 @@ write_files:
 %{ if node_type == "master" ~}
 #Azure Cloud Controller Manager Configuration
 - path: /etc/kubernetes/azure.json
-  permissions: '0600'
+  permissions: '0644'
   encoding: gzip
   content: !!binary |
     ${ configs_azure }
@@ -126,12 +126,12 @@ runcmd:
 #Add the Kubernetes apt repository:
 - [ sh, -c, 'echo deb https://apt.kubernetes.io/ kubernetes-xenial main > /etc/apt/sources.list.d/kubernetes.list' ]
 - [ apt-get, update ]
+#Install Azure CNI plugin. Plugin is used by containerd, so it must run before containerd starts.
+- [ /etc/kubeadm/install-cni-plugin.sh, v1.2.8, v0.9.1 ]
 #Install packages
 - [ sh, -c, 'apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" containerd.io' ]
 - [ apt-get, install, -y, kubelet=1.20.4-00, kubeadm=1.20.4-00, kubectl=1.20.4-00 ]
 - [ apt-mark, hold, kubelet, kubeadm, kubectl ]
-#Install Azure CNI plugin. Plugin is used by containerd, so it must run before containerd starts.
-- [ /etc/kubeadm/install-cni-plugin.sh, v1.2.8, v0.9.1 ]
 #Install containerd as the container runtime
 - [ mkdir, -p, /etc/containerd ]
 - [ systemctl, restart, containerd ]

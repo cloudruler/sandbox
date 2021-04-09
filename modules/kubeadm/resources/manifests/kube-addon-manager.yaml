@@ -15,7 +15,7 @@ spec:
     imagePullPolicy: IfNotPresent
     env:
     - name: KUBECONFIG
-      value: "/var/lib/kubelet/kubeconfig"
+      value: /etc/kubernetes/kubelet.conf
     - name: ADDON_PATH
       value: "/etc/kubernetes/addons"
     resources:

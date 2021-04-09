@@ -34,6 +34,9 @@ sudo journalctl -xeu containerd
 sudo systemctl status kubelet
 sudo journalctl -xeu kubelet
 
+Generate kubelet config yaml is at: /var/lib/kubelet/config.yaml
+Generated kubelet flags is at: /var/lib/kubelet/kubeadm-flags.env
+
 #Check etcd. Run this from master.
 sudo ETCDCTL_API=3 etcdctl member list \
   --endpoints=https://127.0.0.1:2379 \

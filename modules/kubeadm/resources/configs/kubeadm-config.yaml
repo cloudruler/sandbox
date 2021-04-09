@@ -1,0 +1,59 @@
+%{ if node_type == "master" ~}
+    kind: InitConfiguration
+    apiVersion: kubeadm.k8s.io/v1beta2
+    bootstrapTokens:
+    - groups:
+      - system:bootstrappers:kubeadm:default-node-token
+      token: ${bootstrap_token}
+      ttl: 24h0m0s
+      usages:
+      - signing
+      - authentication
+    nodeRegistration:
+      criSocket: unix:///run/containerd/containerd.sock
+      kubeletExtraArgs:
+        azure-container-registry-config: /etc/kubernetes/azure.json
+        cloud-config: /etc/kubernetes/azure.json
+        cloud-provider: azure
+        #network-plugin: cni
+      taints:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+    #Only needed if you want to customize the key with which certs are encrypted when uploaded to the cluster
+    #certificateKey: "e6a2eb8581237ab72a4f494f30285ec12a9694d750b9785706a83bfcbbbd2204"
+%{ else ~}
+    kind: JoinConfiguration
+    apiVersion: kubeadm.k8s.io/v1beta2
+    discovery:
+      bootstrapToken:
+        apiServerEndpoint: ${api_server_name}:6443
+        token: ${bootstrap_token}
+        unsafeSkipCAVerification: false
+        caCertHashes:
+        - ${discovery_token_ca_cert_hash}
+      tlsBootstrapToken: ${bootstrap_token}
+    nodeRegistration:
+      criSocket: unix:///run/containerd/containerd.sock
+      kubeletExtraArgs:
+        azure-container-registry-config: /etc/kubernetes/azure.json
+        cloud-config: /etc/kubernetes/azure.json
+        cloud-provider: azure
+        #network-plugin: cni
+%{ endif ~}
+    ---
+    kind: ClusterConfiguration
+    apiVersion: kubeadm.k8s.io/v1beta2
+    controlPlaneEndpoint: ${api_server_name}
+    # apiServer:
+    #   certSANS:
+    #     - k8s.cloudruler.io
+    networking:
+      podSubnet: ${pod_cidr}
+      #serviceSubnet: ${k8s_service_subnet}
+    ---
+    kind: KubeletConfiguration
+    apiVersion: kubelet.config.k8s.io/v1beta1
+    cgroupDriver: systemd
+    # clusterDNS:
+    # - ${cluster_dns}
+    #staticPodPath: /etc/kubernetes/manifests

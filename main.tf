@@ -5,7 +5,7 @@ provider "azurerm" {
 data "azurerm_client_config" "current" {}
 
 module "common" {
-  source  = "../terraform-cloudruler-common"
+  source = "../terraform-cloudruler-common"
   #source  = "app.terraform.io/cloudruler/common/cloudruler"
   #version = "1.0.0"
 }
@@ -38,8 +38,8 @@ resource "azurerm_resource_group" "rg" {
 module "kubeadm" {
   source                                   = "./modules/kubeadm"
   landing_zone_name                        = local.landing_zone_name
-  master_custom_data_template              = "./modules/kubeadm/user-data-master-azure.yml"
-  worker_custom_data_template              = "./modules/kubeadm/user-data-master-azure.yml"
+  master_custom_data_template              = "modules/kubeadm/resources/cloud-config.yml"
+  worker_custom_data_template              = "modules/kubeadm/resources/cloud-config.yml"
   resource_group_name                      = azurerm_resource_group.rg.name
   location                                 = var.location
   admin_username                           = var.admin_username

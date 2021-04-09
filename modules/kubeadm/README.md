@@ -1,6 +1,6 @@
 sudo kubeadm config images pull
 sudo kubeadm config print init-defaults
-sudo kubeadm init --config /etc/kubeadm/kubeadm-config.yml --v=10
+sudo kubeadm init --config /etc/kubeadm/config.yaml --v=10
 
 sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock ps -a
 sudo crictl --runtime-endpoint unix:///run/containerd/containerd.sock logs CONTAINERID

@@ -47,74 +47,74 @@ resource "azurerm_network_security_group" "nsg_main" {
 
   #k8s master/worker node rules
   security_rule {
-    name                                       = "allow-in-kubelet-api"
-    description                                = "Allow Inbound to kubelet API (used by self, control plane)"
-    priority                                   = 1003
-    direction                                  = "Inbound"
-    protocol                                   = "Tcp"
-    source_address_prefix                      = "*"
-    source_port_range                          = "*"
+    name                       = "allow-in-kubelet-api"
+    description                = "Allow Inbound to kubelet API (used by self, control plane)"
+    priority                   = 1003
+    direction                  = "Inbound"
+    protocol                   = "Tcp"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
     destination_address_prefix = "*"
     #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id, azurerm_application_security_group.asg_k8s_workers.id]
-    destination_port_range                     = "10250"
-    access                                     = "Allow"
+    destination_port_range = "10250"
+    access                 = "Allow"
   }
 
   security_rule {
-    name                                       = "allow-in-kube-scheduler"
-    description                                = "Allow Inbound to kube-scheduler (used by self)"
-    priority                                   = 1004
-    direction                                  = "Inbound"
-    protocol                                   = "Tcp"
-    source_address_prefix                      = "*"
-    source_port_range                          = "*"
+    name                       = "allow-in-kube-scheduler"
+    description                = "Allow Inbound to kube-scheduler (used by self)"
+    priority                   = 1004
+    direction                  = "Inbound"
+    protocol                   = "Tcp"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
     destination_address_prefix = "*"
     #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id, azurerm_application_security_group.asg_k8s_workers.id]
-    destination_port_range                     = "10251"
-    access                                     = "Allow"
+    destination_port_range = "10251"
+    access                 = "Allow"
   }
 
   #k8s master
   security_rule {
-    name                                       = "allow-in-k8s-api"
-    description                                = "Allow Inbound to Kubernetes API server"
-    priority                                   = 1005
-    direction                                  = "Inbound"
-    protocol                                   = "Tcp"
-    source_address_prefix                      = "*"
-    source_port_range                          = "*"
+    name                       = "allow-in-k8s-api"
+    description                = "Allow Inbound to Kubernetes API server"
+    priority                   = 1005
+    direction                  = "Inbound"
+    protocol                   = "Tcp"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
     destination_address_prefix = "*"
     #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
-    destination_port_range                     = "6443"
-    access                                     = "Allow"
+    destination_port_range = "6443"
+    access                 = "Allow"
   }
 
   security_rule {
-    name                                       = "allow-in-etcd-clientapi"
-    description                                = "Allow Inbound to etcd server client API (used by kube-apiserver, etcd)"
-    priority                                   = 1006
-    direction                                  = "Inbound"
-    protocol                                   = "Tcp"
-    source_address_prefix                      = "*"
-    source_port_range                          = "*"
+    name                       = "allow-in-etcd-clientapi"
+    description                = "Allow Inbound to etcd server client API (used by kube-apiserver, etcd)"
+    priority                   = 1006
+    direction                  = "Inbound"
+    protocol                   = "Tcp"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
     destination_address_prefix = "*"
     #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
-    destination_port_range                     = "2379-2380"
-    access                                     = "Allow"
+    destination_port_range = "2379-2380"
+    access                 = "Allow"
   }
 
   security_rule {
-    name                                       = "allow-in-kube-controller-manager"
-    description                                = "Allow Inbound to kube-controller-manager (used by self)"
-    priority                                   = 1007
-    direction                                  = "Inbound"
-    protocol                                   = "Tcp"
-    source_address_prefix                      = "*"
-    source_port_range                          = "*"
+    name                       = "allow-in-kube-controller-manager"
+    description                = "Allow Inbound to kube-controller-manager (used by self)"
+    priority                   = 1007
+    direction                  = "Inbound"
+    protocol                   = "Tcp"
+    source_address_prefix      = "*"
+    source_port_range          = "*"
     destination_address_prefix = "*"
     #destination_application_security_group_ids = [azurerm_application_security_group.asg_k8s_masters.id]
-    destination_port_range                     = "10252"
-    access                                     = "Allow"
+    destination_port_range = "10252"
+    access                 = "Allow"
   }
 }
 

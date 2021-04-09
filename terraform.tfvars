@@ -8,40 +8,40 @@ vnet_cidr = "10.1.0.0/16"
 subnet_cidr = "10.1.0.0/20"
 #Configuration for the k8s master nodes
 master_nodes_config = [
-    {
-        private_ip_address = "10.1.0.4"
-        number_of_pods = 30
-        pod_cidr = "10.1.0.0/20"
-    },
-    #{
-    #    private_ip_address = "10.1.0.5"
-    #    number_of_pods = 0
-    #    pod_cidr = "10.1.32.0/20"
-    #},
-    #{
-    #    private_ip_address = "10.1.0.6"
-    #    number_of_pods = 0
-    #    pod_cidr = "10.1.48.0/20"
-    #}
-  ]
+  {
+    private_ip_address = "10.1.0.4"
+    number_of_pods     = 30
+    pod_cidr           = "10.1.0.0/20"
+  },
+  #{
+  #    private_ip_address = "10.1.0.5"
+  #    number_of_pods = 0
+  #    pod_cidr = "10.1.32.0/20"
+  #},
+  #{
+  #    private_ip_address = "10.1.0.6"
+  #    number_of_pods = 0
+  #    pod_cidr = "10.1.48.0/20"
+  #}
+]
 #Configuration for the k8s worker nodes
 worker_nodes_config = [
-    {
-        private_ip_address = "10.1.0.7"
-        number_of_pods = 30
-        pod_cidr = "10.1.0.0/20"
-    }#,
-    #{
-    #    private_ip_address = "10.1.0.8"
-    #    number_of_pods = 30
-    #    pod_cidr = "10.1.80.0/20"
-    #},
-    #{
-    #    private_ip_address = "10.1.0.9"
-    #    number_of_pods = 30
-    #    pod_cidr = "10.1.96.0/20"
-    #}
-  ]
+  {
+    private_ip_address = "10.1.0.7"
+    number_of_pods     = 30
+    pod_cidr           = "10.1.0.0/20"
+  } #,
+  #{
+  #    private_ip_address = "10.1.0.8"
+  #    number_of_pods = 30
+  #    pod_cidr = "10.1.80.0/20"
+  #},
+  #{
+  #    private_ip_address = "10.1.0.9"
+  #    number_of_pods = 30
+  #    pod_cidr = "10.1.96.0/20"
+  #}
+]
 #Resource group for identities, keys, secrets, and certificates
 identity_resource_group_name = "rg-identity"
 #Name of the SSH Public Key resource
@@ -62,4 +62,4 @@ api_server_name = "k8s.cloudruler.io"
 admin_username = "cloudruleradmin"
 #CIDR for k8s services
 k8s_service_subnet = "10.96.0.0/12"
-cluster_dns = ""
+cluster_dns        = ""

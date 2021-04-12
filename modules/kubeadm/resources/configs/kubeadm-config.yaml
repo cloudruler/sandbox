@@ -96,7 +96,6 @@ apiServer:
     audit-log-path: /var/log/kubeaudit/audit.log
     audit-policy-file: /etc/kubernetes/addons/audit-policy.yaml
     #authorization-mode: Node,RBAC
-    azure-container-registry-config: /etc/kubernetes/azure.json
     cloud-config: /etc/kubernetes/azure.json
     cloud-provider: azure
     #bind-address: '0.0.0.0' 
@@ -130,7 +129,6 @@ apiServer:
 controllerManager:
   extraArgs:
     allocate-node-cidrs: 'false'
-    azure-container-registry-config: /etc/kubernetes/azure.json
     cloud-config: /etc/kubernetes/azure.json
     cloud-provider: azure
     #cluster-cidr: 10.240.0.0/12

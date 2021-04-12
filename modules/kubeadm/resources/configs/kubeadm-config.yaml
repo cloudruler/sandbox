@@ -144,7 +144,7 @@ controllerManager:
     leader-elect: 'true'
     node-monitor-grace-period: 40s
     pod-eviction-timeout: 5m0s
-    profiling: false
+    profiling: 'false'
     #root-ca-file: /etc/kubernetes/certs/ca.crt
     route-reconciliation-period: 10s
     #service-account-private-key-file: /etc/kubernetes/certs/apiserver.key

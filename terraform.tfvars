@@ -9,7 +9,7 @@ subnet_cidr = "10.1.0.0/20"
 #Configuration for the k8s master nodes
 master_nodes_config = [
   {
-    number_of_pods     = 30
+    number_of_pods = 30
   },
   #{
   #    number_of_pods = 0
@@ -21,7 +21,7 @@ master_nodes_config = [
 #Configuration for the k8s worker nodes
 worker_nodes_config = [
   {
-    number_of_pods     = 30
+    number_of_pods = 30
   } #,
   #{
   #    number_of_pods = 30

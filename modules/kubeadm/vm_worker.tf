@@ -19,7 +19,7 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
     subnet_id                     = azurerm_subnet.snet_main.id
     public_ip_address_id          = azurerm_public_ip.pip_k8s_worker[count.index].id
     private_ip_address_allocation = "Dynamic"
-    primary = true
+    primary                       = true
   }
 
   dynamic "ip_configuration" {
@@ -31,7 +31,7 @@ resource "azurerm_network_interface" "nic_k8s_worker" {
       #application_security_group_ids         = [azurerm_application_security_group.asg_k8s_workers.id]
       #load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lbe_bep_k8s_worker.id]
       private_ip_address_allocation = "Dynamic"
-      primary = false
+      primary                       = false
     }
   }
 }
@@ -89,8 +89,8 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = "Standard_B2s"
-  custom_data = local.worker_custom_data
-  admin_username = var.admin_username
+  custom_data         = local.worker_custom_data
+  admin_username      = var.admin_username
   network_interface_ids = [
     azurerm_network_interface.nic_k8s_worker[count.index].id,
   ]

@@ -48,13 +48,13 @@ variable "cluster_public_ip" {
 
 variable "master_nodes_config" {
   type = list(object({
-    number_of_pods     = number
+    number_of_pods = number
   }))
 }
 
 variable "worker_nodes_config" {
   type = list(object({
-    number_of_pods     = number
+    number_of_pods = number
   }))
 }
 

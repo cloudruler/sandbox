@@ -130,12 +130,12 @@ write_files:
   content: !!binary |
     ${ manifests_kube_addon_manager }
 #Addons
-# - path: /etc/kubernetes/addons/audit-policy.yaml
-#   permissions: "0644"
-#   encoding: gzip
-#   owner: root
-#   content: !!binary |
-#     ${ "addons_audit_policy" }
+- path: /etc/kubernetes/addons/audit-policy.yaml
+  permissions: '0644'
+  encoding: gzip
+  owner: root
+  content: !!binary |
+    ${ addons_audit_policy }
 - path: /etc/kubernetes/addons/azure-cloud-provider.yaml
   permissions: '0644'
   encoding: gzip

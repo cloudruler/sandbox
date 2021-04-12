@@ -92,3 +92,7 @@ kubectl get componentstatuses
 controller-manager "http://127.0.0.1:10252/healthz" connection refused
 
 /var/lib/kubelet/config.yaml
+
+
+dig is the gold standard for debugging DNS
+dig -p 1053 @localhost +noall +answer <name> <type>

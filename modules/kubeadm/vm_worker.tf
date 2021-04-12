@@ -89,7 +89,7 @@ resource "azurerm_linux_virtual_machine" "vm_k8s_worker" {
   resource_group_name = var.resource_group_name
   location            = var.location
   size                = "Standard_B2s"
-  #custom_data = local.worker_custom_data
+  custom_data = local.worker_custom_data
   admin_username = var.admin_username
   network_interface_ids = [
     azurerm_network_interface.nic_k8s_worker[count.index].id,

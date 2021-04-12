@@ -5,7 +5,7 @@ data:
     apiVersion: kubeproxy.config.k8s.io/v1alpha1
     kind: KubeProxyConfiguration
     clientConnection:
-      kubeconfig: /var/lib/kubelet/kubeconfig
+      kubeconfig: /etc/kubernetes/kubelet.conf
     clusterCIDR: "${subnet_cidr}"
     mode: "iptables"
     featureGates:
@@ -82,7 +82,7 @@ spec:
         - mountPath: /etc/kubernetes
           name: etc-kubernetes
           readOnly: true
-        - mountPath: /var/lib/kubelet/kubeconfig
+        - mountPath: /etc/kubernetes/kubelet.conf
           name: kubeconfig
           readOnly: true
         - mountPath: /run/xtables.lock
@@ -100,7 +100,7 @@ spec:
           path: /usr/share/ca-certificates
         name: ssl-certs-host
       - hostPath:
-          path: /var/lib/kubelet/kubeconfig
+          path: /etc/kubernetes/kubelet.conf
         name: kubeconfig
       - hostPath:
           path: /etc/kubernetes

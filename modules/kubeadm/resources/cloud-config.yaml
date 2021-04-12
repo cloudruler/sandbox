@@ -14,6 +14,51 @@ write_files:
   content: |
     APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE="1"
   append: true
+  #Script which gets run before starting kubelet
+# - path: /opt/azure/containers/kubelet.sh
+#   permissions: '0755'
+#   owner: root
+#   content: |
+#     #!/bin/bash
+#     set -e
+#     MOUNT_DIR=/var/lib/kubelet
+#     mkdir -p $MOUNT_DIR /var/lib/cni
+#     if ! [[ $(findmnt -rno SOURCE,TARGET $MOUNT_DIR) ]]; then
+#       mount --bind $MOUNT_DIR $MOUNT_DIR
+#     fi
+#     mount --make-shared $MOUNT_DIR
+#     iptables -I FORWARD -d 168.63.129.16 -p tcp --dport 80 -j DROP
+#     #EOF
+# #Environment variables to pass to kubelet
+# - path: /etc/default/kubelet
+#   permissions: \"0644\"
+#   owner: root
+#   content: |
+#     KUBELET_CONFIG=--address=0.0.0.0 --anonymous-auth=false --authentication-token-webhook=true --authorization-mode=Webhook --azure-container-registry-config=/etc/kubernetes/azure.json --cgroups-per-qos=true --client-ca-file=/etc/kubernetes/certs/ca.crt --cloud-config=/etc/kubernetes/azure.json --cloud-provider=azure --cluster-dns=10.0.0.10 --cluster-domain=cluster.local --enforce-node-allocatable=pods --event-qps=0 --eviction-hard=memory.available<750Mi,nodefs.available<10%,nodefs.inodesFree<5% --feature-gates=RotateKubeletServerCertificate=true --healthz-port=10248 --image-gc-high-threshold=85 --image-gc-low-threshold=80 --image-pull-progress-deadline=30m --keep-terminated-pod-volumes=false --kubeconfig=/var/lib/kubelet/kubeconfig --max-pods=30 --network-plugin=cni --node-status-update-frequency=10s --non-masquerade-cidr=0.0.0.0/0 --pod-infra-container-image=mcr.microsoft.com/oss/kubernetes/pause:1.4.1 --pod-manifest-path=/etc/kubernetes/manifests --pod-max-pids=-1 --protect-kernel-defaults=true --read-only-port=0 --register-with-taints=node-role.kubernetes.io/master=true:NoSchedule --resolv-conf=/run/systemd/resolve/resolv.conf --rotate-certificates=true --streaming-connection-idle-timeout=4h --tls-cert-file=/etc/kubernetes/certs/kubeletserver.crt --tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_GCM_SHA256 --tls-private-key-file=/etc/kubernetes/certs/kubeletserver.key --v=2 --volume-plugin-dir=/etc/kubernetes/volumeplugins 
+#     KUBELET_NODE_LABELS=kubernetes.azure.com/role=master,node.kubernetes.io/exclude-from-external-load-balancers=true,node.kubernetes.io/exclude-disruption=true,kubernetes.azure.com/cluster=',variables('labelResourceGroup'),'
+#     #EOF
+
+# #Configuration for kubelet.service
+# - path: /etc/systemd/system/kubelet.service
+#   permissions: '0644'
+#   content: |
+#     [Unit]
+#     Description=Kubelet
+#     Documentation=https://github.com/kubernetes/kubernetes
+#     After=containerd.service
+#     Requires=containerd.service
+#     ConditionPathExists=/usr/local/bin/kubelet
+
+#     [Service]
+#     Restart=always
+#     EnvironmentFile=/etc/default/kubelet
+#     SuccessExitStatus=143
+#     ExecStartPre=/bin/bash /opt/azure/containers/kubelet.sh
+#     ExecStart=/usr/local/bin/kubelet \
+#             --node-labels="$KUBELET_NODE_LABELS" \
+#             $KUBELET_CONFIG
+#     [Install]
+#     WantedBy=multi-user.target
   #Configuration for containerd
 - path: /etc/containerd/config.toml
   permissions: '0644'
@@ -85,6 +130,12 @@ write_files:
   content: !!binary |
     ${ manifests_kube_addon_manager }
 #Addons
+# - path: /etc/kubernetes/addons/audit-policy.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: root
+#   content: !!binary |
+#     ${ "addons_audit_policy" }
 - path: /etc/kubernetes/addons/azure-cloud-provider.yaml
   permissions: '0644'
   encoding: gzip
@@ -95,11 +146,41 @@ write_files:
   encoding: gzip
   content: !!binary |
     ${ addons_azure_cni_networkmonitor }
+#Flexvolume is deprecated. use https://github.com/kubernetes-sigs/blob-csi-driver
+# - path: /etc/kubernetes/addons/blobfuse-flexvolume.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: root
+#   content: !!binary |
+#     ${ "addons_blobfuse_flexvolume" }
+
+# - path: /etc/kubernetes/addons/coredns.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: root
+#   content: !!binary |
+#     ${ "addons_coredns" }
+
+# - path: /etc/kubernetes/addons/secrets-store-csi-driver.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: root
+#   content: !!binary |
+#     ${ "addons_secrets_store_csi_driver" }
+
 - path: /etc/kubernetes/addons/ip-masq-agent.yaml
   permissions: '0644'
   encoding: gzip
   content: !!binary |
     ${ addons_ip_masq_agent }
+
+# - path: /etc/kubernetes/addons/kube-proxy.yaml
+#   permissions: "0644"
+#   encoding: gzip
+#   owner: root
+#   content: !!binary |
+#     ${ "addons_kube_proxy" }
+
 - path: /etc/kubernetes/addons/metrics-server.yaml
   permissions: '0644'
   encoding: gzip

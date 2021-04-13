@@ -158,18 +158,24 @@ data "azurerm_ssh_public_key" "ssh_public_key" {
 
 resource "azurerm_private_dns_zone" "dns" {
   name                = "cloudruler.com"
-  resource_group_name = var.connectivity_resource_group_name
+  resource_group_name = var.resource_group_name
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "dns_vnet" {
+  depends_on = [
+    azurerm_private_dns_zone.dns
+  ]
   name                  = "dns-vnet-${var.landing_zone_name}"
-  resource_group_name   = var.connectivity_resource_group_name
+  resource_group_name   = var.resource_group_name
   private_dns_zone_name = azurerm_private_dns_zone.dns.name
   virtual_network_id    = azurerm_virtual_network.vnet_zone.id
   registration_enabled  = true
 }
 
 resource "azurerm_private_dns_a_record" "k8s_endpoint" {
+  depends_on = [
+    azurerm_private_dns_zone.dns
+  ]
   #count               = length(var.master_nodes_config)
   name                = "k8s"
   zone_name           = azurerm_private_dns_zone.dns.name

@@ -128,13 +128,13 @@ write_files:
           }
       ]
     }
-%{ if node_type == "master" ~}
 #Azure Cloud Controller Manager Configuration
 - path: /etc/kubernetes/azure.json
   permissions: '0644'
   encoding: gzip
   content: !!binary |
     ${ configs_azure }
+%{ if node_type == "master" ~}
 #Manifests
 #The addon manager will apply the addons to the cluster and maintain their state
 - path: /etc/kubernetes/manifests/kube-addon-manager.yaml
@@ -194,11 +194,11 @@ write_files:
 #   content: !!binary |
 #     ${ "addons_kube_proxy" }
 
-- path: /etc/kubernetes/addons/metrics-server.yaml
-  permissions: '0644'
-  encoding: gzip
-  content: !!binary |
-    ${ addons_metrics_server }
+# - path: /etc/kubernetes/addons/metrics-server.yaml
+#   permissions: '0644'
+#   encoding: gzip
+#   content: !!binary |
+#     ${ "addons_metrics_server" }
 - path: /etc/kubernetes/addons/pod-security-policy.yaml
   permissions: '0644'
   encoding: gzip

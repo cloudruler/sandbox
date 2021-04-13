@@ -49,7 +49,7 @@ nodeRegistration:
     #tls-cert-file: /etc/kubernetes/certs/kubeletserver.crt
     #tls-cipher-suites: TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_GCM_SHA256
     #tls-private-key-file: /etc/kubernetes/certs/kubeletserver.key
-    #v: 2
+    v: '4'
     volume-plugin-dir: /etc/kubernetes/volumeplugins
   taints:
   - effect: NoSchedule
@@ -107,7 +107,7 @@ nodeRegistration:
     #tls-cert-file: /etc/kubernetes/certs/kubeletserver.crt
     #tls-cipher-suites: TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_256_GCM_SHA384,TLS_RSA_WITH_AES_128_GCM_SHA256
     #tls-private-key-file: /etc/kubernetes/certs/kubeletserver.key
-    #v: 2
+    v: '4'
     volume-plugin-dir: /etc/kubernetes/volumeplugins
 %{ endif ~}
 ---
@@ -124,7 +124,7 @@ apiServer:
   extraArgs:
     #advertise-address: 10.255.255.5
     allow-privileged: 'true'
-    anonymous-auth: 'false'
+    #anonymous-auth: 'true' #Any reason we might allow anonymous?
     audit-log-maxage: '30'
     audit-log-maxbackup: '10'
     audit-log-maxsize: '100'
@@ -160,7 +160,7 @@ apiServer:
     #tls-cert-file: /etc/kubernetes/certs/apiserver.crt
     #tls-cipher-suites: TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA
     #tls-private-key-file: /etc/kubernetes/certs/apiserver.key
-    #v: '4'
+    v: '4'
   extraVolumes:
   - name: etc-kubernetes
     hostPath: /etc/kubernetes
@@ -198,7 +198,7 @@ controllerManager:
     #service-account-private-key-file: /etc/kubernetes/certs/apiserver.key
     #terminated-pod-gc-threshold: '5000'
     #use-service-account-credentials: 'true'
-    #v: '2'
+    v: '4'
   extraVolumes:
   - name: etc-kubernetes
     hostPath: /etc/kubernetes
@@ -215,7 +215,7 @@ scheduler:
     #kubeconfig: /etc/kubernetes/kubelet.conf
     leader-elect: 'true'
     #profiling: 'false'
-    #v: '2'
+    v: '4'
   extraVolumes:
   - name: etc-kubernetes
     hostPath: /etc/kubernetes

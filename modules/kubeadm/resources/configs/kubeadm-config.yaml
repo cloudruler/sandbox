@@ -127,10 +127,16 @@ apiServer:
     #tls-private-key-file: /etc/kubernetes/certs/apiserver.key
     #v: '4'
   extraVolumes:
-  - name: /etc/kubernetes
-    hostPath: /etc/kubernetes
-    mountPath: /etc/kubernetes
-    pathType: Directory
+  - name: etc-kubernetes-addons
+    hostPath: /etc/kubernetes/addons
+    mountPath: /etc/kubernetes/addons
+    pathType: DirectoryOrCreate
+    readOnly: 'true'
+  - name: msi
+    hostPath: /var/lib/waagent/ManagedIdentity-Settings
+    mountPath: /var/lib/waagent/ManagedIdentity-Settings
+    pathType: DirectoryOrCreate
+    readOnly: 'true'
 controllerManager:
   extraArgs:
     allocate-node-cidrs: 'false'
@@ -154,12 +160,34 @@ controllerManager:
     terminated-pod-gc-threshold: '5000'
     use-service-account-credentials: 'true'
     #v: '2'
+  extraVolumes:
+  - name: etc-kubernetes-addons
+    hostPath: /etc/kubernetes/addons
+    mountPath: /etc/kubernetes/addons
+    pathType: DirectoryOrCreate
+    readOnly: 'true'
+  - name: msi
+    hostPath: /var/lib/waagent/ManagedIdentity-Settings
+    mountPath: /var/lib/waagent/ManagedIdentity-Settings
+    pathType: DirectoryOrCreate
+    readOnly: 'true'
 scheduler:
   extraArgs:
     #kubeconfig: /etc/kubernetes/kubelet.conf
     leader-elect: 'true'
     profiling: 'false'
     #v: '2'
+  extraVolumes:
+  - name: etc-kubernetes-addons
+    hostPath: /etc/kubernetes/addons
+    mountPath: /etc/kubernetes/addons
+    pathType: DirectoryOrCreate
+    readOnly: 'true'
+  - name: msi
+    hostPath: /var/lib/waagent/ManagedIdentity-Settings
+    mountPath: /var/lib/waagent/ManagedIdentity-Settings
+    pathType: DirectoryOrCreate
+    readOnly: 'true'
 ---
 kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1
@@ -167,3 +195,6 @@ cgroupDriver: systemd
 # clusterDNS:
 # - ${cluster_dns}
 #staticPodPath: /etc/kubernetes/manifests
+# ---
+# kind: KubeProxyConfiguration
+# apiVersion: kubeproxy.config.k8s.io/v1alpha1

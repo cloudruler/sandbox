@@ -19,23 +19,13 @@ sudo cat /etc/cni/net.d/10-azure.conflist
 sudo cat /var/log/azure-vnet.log
 sudo ls -la /opt/cni/bin
 
-kubectl -n kube-system get deployments
-
-#Troubleshoot coredns
-dig @<pod ip address> kubernetes.default.svc.cluster.local +noall +answer
-
-##MANIFESTS
-/etc/kubernetes/manifests/
-
-
 sudo systemctl status containerd
 sudo journalctl -xeu containerd
 
 sudo systemctl status kubelet
 sudo journalctl -xeu kubelet
 
-Generate kubelet config yaml is at: /var/lib/kubelet/config.yaml
-Generated kubelet flags is at: /var/lib/kubelet/kubeadm-flags.env
+kubectl -n kube-system get deployments
 
 #Check etcd. Run this from master.
 sudo ETCDCTL_API=3 etcdctl member list \
@@ -49,6 +39,18 @@ crictl info
 
 #Verify workers are bootstapped
 kubectl get nodes
+
+
+
+#Troubleshoot coredns
+dig @<pod ip address> kubernetes.default.svc.cluster.local +noall +answer
+
+##MANIFESTS
+/etc/kubernetes/manifests/
+
+Generated kubelet config yaml is at: /var/lib/kubelet/config.yaml
+Generated kubelet flags is at: /var/lib/kubelet/kubeadm-flags.env
+
 
 cat /var/lib/cloud/instance user-data.txt
 cloud-init devel schema --config-file /var/lib/cloud/instance user-data.txt

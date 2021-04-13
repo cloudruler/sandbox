@@ -131,12 +131,16 @@ apiServer:
     hostPath: /etc/kubernetes/addons
     mountPath: /etc/kubernetes/addons
     pathType: DirectoryOrCreate
-    readOnly: 'true'
+    readOnly: true
   - name: msi
     hostPath: /var/lib/waagent/ManagedIdentity-Settings
     mountPath: /var/lib/waagent/ManagedIdentity-Settings
     pathType: DirectoryOrCreate
-    readOnly: 'true'
+    readOnly: true
+  - name: sock
+    hostPath: /opt
+    mountPath: /opt
+    pathType: DirectoryOrCreate
 controllerManager:
   extraArgs:
     allocate-node-cidrs: 'false'
@@ -165,12 +169,12 @@ controllerManager:
     hostPath: /etc/kubernetes/addons
     mountPath: /etc/kubernetes/addons
     pathType: DirectoryOrCreate
-    readOnly: 'true'
+    readOnly: true
   - name: msi
     hostPath: /var/lib/waagent/ManagedIdentity-Settings
     mountPath: /var/lib/waagent/ManagedIdentity-Settings
     pathType: DirectoryOrCreate
-    readOnly: 'true'
+    readOnly: true
 scheduler:
   extraArgs:
     #kubeconfig: /etc/kubernetes/kubelet.conf
@@ -182,12 +186,12 @@ scheduler:
     hostPath: /etc/kubernetes/addons
     mountPath: /etc/kubernetes/addons
     pathType: DirectoryOrCreate
-    readOnly: 'true'
+    readOnly: true
   - name: msi
     hostPath: /var/lib/waagent/ManagedIdentity-Settings
     mountPath: /var/lib/waagent/ManagedIdentity-Settings
     pathType: DirectoryOrCreate
-    readOnly: 'true'
+    readOnly: true
 ---
 kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1

@@ -1,12 +1,12 @@
-# resource "azurerm_public_ip" "pip_k8s_master" {
-#   count               = length(var.master_nodes_config)
-#   name                = "pip-k8s-master-${count.index}"
-#   location            = var.location
-#   resource_group_name = var.resource_group_name
-#   sku                 = "Standard"
-#   allocation_method   = "Static"
-#   domain_name_label   = "cloudruler-k8s-master-${count.index}"
-# }
+resource "azurerm_public_ip" "pip_k8s_master" {
+  count               = length(var.master_nodes_config)
+  name                = "pip-k8s-master-${count.index}"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  sku                 = "Standard"
+  allocation_method   = "Static"
+  domain_name_label   = "cloudruler-k8s-master-${count.index}"
+}
 
 resource "azurerm_network_interface" "nic_k8s_master" {
   count                = length(var.master_nodes_config)
@@ -15,9 +15,9 @@ resource "azurerm_network_interface" "nic_k8s_master" {
   resource_group_name  = var.resource_group_name
   enable_ip_forwarding = true
   ip_configuration {
-    name      = "internal-${count.index}"
-    subnet_id = azurerm_subnet.snet_main.id
-    #public_ip_address_id          = azurerm_public_ip.pip_k8s_master[count.index].id
+    name                          = "internal-${count.index}"
+    subnet_id                     = azurerm_subnet.snet_main.id
+    public_ip_address_id          = azurerm_public_ip.pip_k8s_master[count.index].id
     private_ip_address_allocation = "Dynamic"
     primary                       = true
   }
@@ -145,12 +145,12 @@ resource "azurerm_lb_backend_address_pool" "lbe_bep_k8s_master" {
   loadbalancer_id = azurerm_lb.lbe_k8s.id
 }
 
-resource "azurerm_network_interface_backend_address_pool_association" "lb_bep_k8s_nic_master" {
-  count                   = length(var.master_nodes_config)
-  network_interface_id    = azurerm_network_interface.nic_k8s_master[count.index].id
-  ip_configuration_name   = "internal-${count.index}"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id
-}
+# resource "azurerm_network_interface_backend_address_pool_association" "lb_bep_k8s_nic_master" {
+#   count                   = length(var.master_nodes_config)
+#   network_interface_id    = azurerm_network_interface.nic_k8s_master[count.index].id
+#   ip_configuration_name   = "internal-${count.index}"
+#   backend_address_pool_id = azurerm_lb_backend_address_pool.lbe_bep_k8s_master.id
+# }
 
 resource "azurerm_lb_nat_rule" "lb_nat_k8s_master" {
   count                          = length(var.master_nodes_config)
@@ -163,12 +163,12 @@ resource "azurerm_lb_nat_rule" "lb_nat_k8s_master" {
   frontend_ip_configuration_name = azurerm_lb.lbe_k8s.frontend_ip_configuration[0].name
 }
 
-resource "azurerm_network_interface_nat_rule_association" "nic_k8s_master_lb_nat_k8s_master" {
-  count                 = length(var.master_nodes_config)
-  network_interface_id  = azurerm_network_interface.nic_k8s_master[count.index].id
-  ip_configuration_name = "internal-${count.index}"
-  nat_rule_id           = azurerm_lb_nat_rule.lb_nat_k8s_master[count.index].id
-}
+# resource "azurerm_network_interface_nat_rule_association" "nic_k8s_master_lb_nat_k8s_master" {
+#   count                 = length(var.master_nodes_config)
+#   network_interface_id  = azurerm_network_interface.nic_k8s_master[count.index].id
+#   ip_configuration_name = "internal-${count.index}"
+#   nat_rule_id           = azurerm_lb_nat_rule.lb_nat_k8s_master[count.index].id
+# }
 
 resource "azurerm_lb_outbound_rule" "lbe_out_rule_k8s_master" {
   resource_group_name     = var.resource_group_name

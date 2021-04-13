@@ -45,7 +45,7 @@ bootstrap_token_secret_name = "k8s-bootstrap-token"
 #CA hash passed to kubeadm join
 discovery_token_ca_cert_hash_secret_name = "k8s-discovery-token-ca-cert-hash"
 #The name to reach the api server like k8s.cloudruler.io
-api_server_name = "k8s.cloudruler.io"
+api_server_name = "k8s.cloudruler.com"
 #Username of the admin user
 admin_username = "cloudruleradmin"
 #CIDR for k8s services

@@ -40,7 +40,7 @@ crictl info
 #Verify workers are bootstapped
 kubectl get nodes
 
-
+kubectl -n kube-system exec -it etcd-<Tab> -- sh
 
 #Troubleshoot coredns
 dig @<pod ip address> kubernetes.default.svc.cluster.local +noall +answer

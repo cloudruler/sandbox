@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-addon-manager
+  namespace: kube-system
+  version: v1
+  labels:
+    app: kube-addon-manager
+spec:
+  priorityClassName: system-node-critical
+  hostNetwork: true
+  containers:
+  - name: kube-addon-manager
+    image: mcr.microsoft.com/oss/kubernetes/kube-addon-manager:v9.1.3
+    imagePullPolicy: IfNotPresent
+    env:
+    - name: KUBECONFIG
+      value: /etc/kubernetes/admin.conf
+    - name: ADDON_PATH
+      value: "/etc/kubernetes/addons"
+    resources:
+      requests:
+        cpu: 5m
+        memory: 50Mi
+    volumeMounts:
+    - name: addons
+      mountPath: /etc/kubernetes/addons
+      readOnly: true
+    - name: msi
+      mountPath: /var/lib/waagent/ManagedIdentity-Settings
+      readOnly: true
+    - name: var-lib-kubelet
+      mountPath: /var/lib/kubelet
+      readOnly: true
+    - name: etc-kubernetes
+      mountPath: /etc/kubernetes
+      readOnly: true
+  volumes:
+  - name: addons
+    hostPath:
+      path: /etc/kubernetes/addons
+  - name: msi
+    hostPath:
+      path: /var/lib/waagent/ManagedIdentity-Settings
+  - name: var-lib-kubelet
+    hostPath:
+      path: /var/lib/kubelet
+  - name: etc-kubernetes
+    hostPath:
+      path: /etc/kubernetes

@@ -51,3 +51,5 @@ admin_username = "cloudruleradmin"
 #CIDR for k8s services
 k8s_service_subnet = "10.96.0.0/12"
 cluster_dns        = ""
+crio_version = "1.23"
+crio_os_version = "xUbuntu_20.04"

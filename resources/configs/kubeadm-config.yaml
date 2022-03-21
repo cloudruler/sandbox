@@ -1,0 +1,6 @@
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
+kubernetesVersion: 1.21.1
+controlPlaneEndpoint: ${api_server_name}
+networking:
+  podSubnet: ${subnet_cidr}

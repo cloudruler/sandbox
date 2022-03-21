@@ -69,3 +69,11 @@ variable "k8s_service_subnet" {
 variable "cluster_dns" {
   type = string
 }
+
+variable "crio_version" {
+  type = string
+}
+
+variable "crio_os_version" {
+  type = string
+}

@@ -4,12 +4,6 @@ provider "azurerm" {
 
 data "azurerm_client_config" "current" {}
 
-module "common" {
-  source = "../terraform-cloudruler-common"
-  #source  = "app.terraform.io/cloudruler/common/cloudruler"
-  #version = "1.0.0"
-}
-
 locals {
   landing_zone_name = "sandbox"
 }

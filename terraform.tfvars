@@ -9,13 +9,11 @@ subnet_cidr = "10.1.0.0/20"
 #Configuration for the k8s master nodes
 master_nodes_config = [
   {
-    number_of_pods = 30
   }
 ]
 #Configuration for the k8s worker nodes
 worker_nodes_config = [
   {
-    number_of_pods = 30
   }
 ]
 #Resource group for identities, keys, secrets, and certificates

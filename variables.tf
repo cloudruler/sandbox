@@ -48,6 +48,10 @@ variable "subnet_cidr" {
   type = string
 }
 
+variable "pods_cidr" {
+  type = string
+}
+
 variable "bootstrap_token_secret_name" {
   type = string
 }

@@ -84,6 +84,12 @@ write_files:
   encoding: gzip
   content: !!binary |
     ${configs_kubeadm}
+# kubeadm config file
+- path: /etc/kubeadm/config.yaml
+  permissions: '0644'
+  encoding: gzip
+  content: !!binary |
+    ${configs_kubeadm}
 #Make sure that the overlay and br_netfilter module is loaded
 - path: /etc/modules-load.d/k8s.conf
   permissions: '0644'

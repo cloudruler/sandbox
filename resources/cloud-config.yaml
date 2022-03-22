@@ -11,6 +11,12 @@ write_files:
   content: |
     APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE="1"
   append: true
+# kubeadm config file
+- path: /etc/kubeadm/config.yaml
+  permissions: '0644'
+  encoding: gzip
+  content: !!binary |
+    ${configs_kubeadm}
 #Make sure that the overlay and br_netfilter module is loaded
 - path: /etc/modules-load.d/k8s.conf
   permissions: '0644'
@@ -53,3 +59,14 @@ runcmd:
 #Install kubernetes
 - [ apt-get, install, -y, kubelet=1.22.1-00, kubeadm=1.22.1-00, kubectl=1.22.1-00 ]
 - [ apt-mark, hold, kubelet, kubeadm, kubectl ]
+%{ if node_type == "master" ~}
+#Initialize the cluster
+- [ sh, -c, 'kubeadm init --config /etc/kubeadm/config.yaml' ]
+#- [ kubectl, apply, -f https://raw.githubusercontent.com/Azure/acs-engine/master/parts/k8s/addons/kubernetesmasteraddons-azure-npm-daemonset.yaml ]
+# - [ mkdir, -p, /home/${admin_username}/.kube ]
+# - [ cp, /etc/kubernetes/admin.conf, /home/${admin_username}/.kube/config ]
+# - [ chown, '${admin_username}:${admin_username}', /home/${admin_username}/.kube/config ]
+%{ else ~}
+##Join the worker to the cluster
+#- [ sh, -c, 'kubeadm join --config /etc/kubeadm/config.yaml']
+%{ endif ~}

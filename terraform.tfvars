@@ -6,6 +6,8 @@ connectivity_resource_group_name = "rg-connectivity"
 vnet_cidr = "10.1.0.0/16"
 #CIDR for the k8s subnet
 subnet_cidr = "10.1.0.0/20"
+#CIDR for the pods
+pods_cidr = "10.96.0.0/12" #"192.168.0.0/16"
 #Configuration for the k8s master nodes
 master_nodes_config = [
   {

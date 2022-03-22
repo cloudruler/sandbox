@@ -33,6 +33,7 @@ module "aks_cluster" {
   worker_nodes_config                      = var.worker_nodes_config
   vnet_cidr                                = var.vnet_cidr
   subnet_cidr                              = var.subnet_cidr
+  pods_cidr                                = var.pods_cidr
   bootstrap_token_secret_name              = var.bootstrap_token_secret_name
   discovery_token_ca_cert_hash_secret_name = var.discovery_token_ca_cert_hash_secret_name
   api_server_name                          = var.api_server_name

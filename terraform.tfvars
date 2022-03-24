@@ -9,15 +9,9 @@ subnet_cidr = "10.1.0.0/20"
 #CIDR for the pods
 pods_cidr = "10.96.0.0/12" #"192.168.0.0/16"
 #Configuration for the k8s master nodes
-master_nodes_config = [
-  {
-  }
-]
+master_nodes_config = [ {} ]
 #Configuration for the k8s worker nodes
-worker_nodes_config = [
-  {
-  }
-]
+worker_nodes_config = [ {} ]
 #Resource group for identities, keys, secrets, and certificates
 identity_resource_group_name = "rg-identity"
 #Name of the SSH Public Key resource
@@ -41,3 +35,9 @@ k8s_service_subnet = "10.96.0.0/12"
 cluster_dns        = ""
 crio_version = "1.23"
 crio_os_version = "xUbuntu_20.04"
+vm_image_publisher = {
+  publisher = "canonical"
+  offer     = "0001-com-ubuntu-server-focal"
+  sku       = "20_04-lts-gen2"
+  version   = "latest"
+}

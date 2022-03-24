@@ -41,4 +41,5 @@ module "aks_cluster" {
   cluster_dns                              = var.cluster_dns
   crio_version                             = var.crio_version
   crio_os_version                          = var.crio_os_version
+  vm_image_publisher                       = var.vm_image_publisher
 }

@@ -79,3 +79,12 @@ variable "crio_version" {
 variable "crio_os_version" {
   type = string
 }
+
+variable "vm_image_publisher" {
+  type = object({
+    publisher = string
+    offer     = string
+    sku       = string
+    version   = string
+  })
+}

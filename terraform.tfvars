@@ -2,12 +2,16 @@
 location = "southcentralus"
 #Resource group for DNS, Public IPs, etc.
 connectivity_resource_group_name = "rg-connectivity"
-#CIDR for the landing zone
-vnet_cidr = "10.1.0.0/16"
-#CIDR for the k8s subnet
-subnet_cidr = "10.1.0.0/20"
-#CIDR for the pods
-pods_cidr = "10.96.0.0/12" #"192.168.0.0/16"
+#CIDR for South Central US: 10.0.1.0 - 10.0.1.255 (254 ips)
+vnet_cidr = "10.0.1.0/24"
+#CIDR for the k8s subnet: 10.0.1.0 - 10.0.1.31 (30 ips)
+subnet_cidr = "10.0.1.0/27"
+#CIDR for the pods: 10.0.1.128 - 10.0.1.255 (126 ips)
+pods_cidr = "10.0.1.128/25"
+#CIDR for cluster services: 10.0.1.32 - 10.0.1.63 (30 ips)
+k8s_service_subnet = "10.0.1.32/27"
+#IP of the DNS service for the cluster
+cluster_dns        = "10.0.1.42"
 #Configuration for the k8s master nodes
 master_nodes_config = [ {} ]
 #Configuration for the k8s worker nodes
@@ -30,9 +34,6 @@ discovery_token_ca_cert_hash_secret_name = "k8s-discovery-token-ca-cert-hash"
 api_server_name = "k8s.cloudruler.com"
 #Username of the admin user
 admin_username = "cloudruleradmin"
-#CIDR for k8s services
-k8s_service_subnet = "10.96.0.0/12"
-cluster_dns        = ""
 crio_version = "1.23"
 crio_os_version = "xUbuntu_20.04"
 vm_image_publisher = {
@@ -41,3 +42,4 @@ vm_image_publisher = {
   sku       = "20_04-lts-gen2"
   version   = "latest"
 }
+resources_path = "../terraform-azurerm-aks_cluster/resources"

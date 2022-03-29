@@ -18,8 +18,7 @@ module "aks_cluster" {
   #source                                   = "app.terraform.io/cloudruler/aks_cluster/azurerm"
   #version                                 = ">= 0.0.1"
   landing_zone_name                        = local.landing_zone_name
-  master_custom_data_template              = "resources/cloud-config.yaml"
-  worker_custom_data_template              = "resources/cloud-config.yaml"
+  resources_path                           = var.resources_path
   resource_group_name                      = azurerm_resource_group.rg.name
   location                                 = var.location
   admin_username                           = var.admin_username

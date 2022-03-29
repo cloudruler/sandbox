@@ -88,3 +88,7 @@ variable "vm_image_publisher" {
     version   = string
   })
 }
+
+variable "resources_path" {
+  type = string
+}

@@ -6,12 +6,12 @@ connectivity_resource_group_name = "rg-connectivity"
 vnet_cidr = "10.0.1.0/24"
 #CIDR for the k8s subnet: 10.0.1.0 - 10.0.1.31 (30 ips)
 subnet_cidr = "10.0.1.0/27"
-#CIDR for the pods: 10.0.1.128 - 10.0.1.255 (126 ips)
-pods_cidr = "10.0.1.128/25"
-#CIDR for cluster services: 10.0.1.32 - 10.0.1.63 (30 ips)
-k8s_service_subnet = "10.0.1.32/27"
+#CIDR for the pods: 10.0.2.0 - 10.0.2.255 (254 ips)
+pods_cidr = "10.0.2.0/24"
+#CIDR for cluster services: 10.0.3.0 - 10.0.3.63 (30 ips)
+k8s_service_subnet = "10.0.3.0/27"
 #IP of the DNS service for the cluster
-cluster_dns        = "10.0.1.42"
+cluster_dns        = "10.0.3.10"
 #Configuration for the k8s master nodes
 master_nodes_config = [ {} ]
 #Configuration for the k8s worker nodes

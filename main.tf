@@ -14,7 +14,7 @@ resource "azurerm_resource_group" "rg" {
 }
 
 module "aks_cluster" {
-  source                                   = "../terraform-azurerm-aks_cluster"
+  source = "../terraform-azurerm-aks_cluster"
   #source                                   = "app.terraform.io/cloudruler/aks_cluster/azurerm"
   #version                                 = ">= 0.0.1"
   landing_zone_name                        = local.landing_zone_name

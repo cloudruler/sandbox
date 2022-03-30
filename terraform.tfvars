@@ -11,11 +11,11 @@ pods_cidr = "10.0.2.0/24"
 #CIDR for cluster services: 10.0.3.0 - 10.0.3.63 (30 ips)
 k8s_service_subnet = "10.0.3.0/27"
 #IP of the DNS service for the cluster
-cluster_dns        = "10.0.3.10"
+cluster_dns = "10.0.3.10"
 #Configuration for the k8s master nodes
-master_nodes_config = [ {} ]
+master_nodes_config = [{}]
 #Configuration for the k8s worker nodes
-worker_nodes_config = [ {} ]
+worker_nodes_config = [{}]
 #Resource group for identities, keys, secrets, and certificates
 identity_resource_group_name = "rg-identity"
 #Name of the SSH Public Key resource
@@ -33,8 +33,8 @@ discovery_token_ca_cert_hash_secret_name = "k8s-discovery-token-ca-cert-hash"
 #The name to reach the api server like k8s.cloudruler.io
 api_server_name = "k8s.cloudruler.com"
 #Username of the admin user
-admin_username = "cloudruleradmin"
-crio_version = "1.23"
+admin_username  = "cloudruleradmin"
+crio_version    = "1.23"
 crio_os_version = "xUbuntu_20.04"
 vm_image_publisher = {
   publisher = "canonical"

@@ -92,3 +92,7 @@ variable "vm_image_publisher" {
 variable "resources_path" {
   type = string
 }
+
+variable "helm_version" {
+  type = string
+}

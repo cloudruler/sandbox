@@ -15,7 +15,7 @@ cluster_dns = "10.0.3.10"
 #Configuration for the k8s master nodes
 master_nodes_config = [{}]
 #Configuration for the k8s worker nodes
-worker_nodes_config = [{}]
+worker_nodes_config = [{}, {}]
 #Resource group for identities, keys, secrets, and certificates
 identity_resource_group_name = "rg-identity"
 #Name of the SSH Public Key resource
@@ -43,3 +43,4 @@ vm_image_publisher = {
   version   = "latest"
 }
 resources_path = "../terraform-azurerm-aks_cluster/resources"
+helm_version = "3.8.2"

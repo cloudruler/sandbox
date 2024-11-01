@@ -43,4 +43,4 @@ vm_image_publisher = {
   version   = "latest"
 }
 resources_path = "../terraform-azurerm-aks_cluster/resources"
-helm_version = "3.8.2"
+helm_version   = "3.8.2"
